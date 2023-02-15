@@ -238,3 +238,18 @@ class MyApp(tk.Tk):
 
         elif self.install_option.get() == "ETL":
             messagebox.showinfo("Info", "ETL installation not implemented yet.")
+  import os
+
+class SetWindowsEnvironmentVariables:
+    def __init__(self):
+        pass
+
+    def set_iib_version(self):
+        os.environ["IIB_Version"] = "10.0.2"
+
+    def update_path(self):
+        path = os.environ["PATH"]
+        new_path = "C:\\my\\specific\\location;" + path
+        os.environ["PATH"] = new_path
+
+
