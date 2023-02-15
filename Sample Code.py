@@ -200,3 +200,41 @@ class MyApp:
 if __name__ == "__main__":
     app = Application()
     app.run()
+class MyApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("EAI/ETL Installer")
+
+        self.eai_option = tk.StringVar()
+        self.install_option = tk.StringVar()
+        self.unattended_install = tk.StringVar(value="No")
+        self.repo_update_type = tk.StringVar(value="Update")
+        self.reboot_automatically = tk.StringVar(value="No")
+
+        self.create_eai_option()
+        self.mainloop()
+
+    def installation_setup(self):
+        if self.install_option.get() == "EAI":
+            unattended_install = self.unattended_install.get()
+            repo_update_type = self.repo_update_type.get()
+            reboot_automatically = self.reboot_automatically.get()
+            eai_option = self.eai_option.get()
+
+            # Call the CheckWorkspaceDirectory class to validate the workspace directory
+            cwsd = CheckWorkspaceDirectory(eai_option)
+            if not cwsd.check_workspace_directory():
+                messagebox.showerror("Error", "Invalid workspace directory.")
+                return
+
+            # Call the SetWindowsEnvironmentVariables class to set the environment variables for Windows
+            swev = SetWindowsEnvironmentVariables()
+            swev.set_iib_version()
+            swev.update_path()
+
+            # Call the Installation class to run the installation
+            inst = Installation(unattended_install, repo_update_type, reboot_automatically, eai_option)
+            inst.run()
+
+        elif self.install_option.get() == "ETL":
+            messagebox.showinfo("Info", "ETL installation not implemented yet.")
