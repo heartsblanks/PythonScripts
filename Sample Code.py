@@ -118,21 +118,6 @@ class MyApp:
         quit_button = tk.Button(self.options_window, text="Quit", command=self.options_window.destroy)
         quit_button.pack(side="right")
 
-        # If Unattended Installation is selected, automatically select Yes for Reboot Automatically
-        def ui_handler():
-            if self.ui_var.get() == "Yes":
-                self.ra_var.set("Yes")
-
-        self.ui_var.trace_add("write", lambda *args: ui_handler())
-
-        # If Repository Update Type is selected, deselect all other options
-        def repo_handler():
-            if self.repo_var.get() == "Update":
-                self.ui_var.set("No")
-                self.ra_var.set("No")
-
-        self.repo_var.trace_add("write", lambda *args: repo_handler())
-
         # Wait for user input
         self.options_window.wait_window()
 
