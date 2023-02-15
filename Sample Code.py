@@ -81,37 +81,61 @@ class MyApp:
             messagebox.showerror("Error", "Please enter both HB and HO passwords.")
 
     def dummy_function(self):
-        # create a new window for unattended installation options
-        ui_window = tk.Toplevel(self.root)
-        ui_window.title("Unattended Installation Options")
+        # Create the pop-up window for installation options
+        self.options_window = tk.Toplevel()
+        self.options_window.title("Installation Options")
 
-        # create radio buttons for Unattended Installation, Repository Update Type, and Reboot automatically options
-        ui_label = ttk.Label(ui_window, text="Unattended Installation:")
-        ui_label.grid(column=0, row=0, padx=5, pady=5, sticky="w")
-        ui_yes_radio = ttk.Radiobutton(ui_window, text="Yes", value="yes", variable=self.ui_option)
-        ui_yes_radio.grid(column=1, row=0, sticky="w")
-        ui_no_radio = ttk.Radiobutton(ui_window, text="No", value="no", variable=self.ui_option)
-        ui_no_radio.grid(column=2, row=0, sticky="w")
+        # Create the Unattended Installation label and radio buttons
+        ui_label = tk.Label(self.options_window, text="Unattended Installation:")
+        ui_label.pack()
+        self.ui_var = tk.StringVar(value="No")
+        ui_yes_button = tk.Radiobutton(self.options_window, text="Yes", variable=self.ui_var, value="Yes")
+        ui_yes_button.pack()
+        ui_no_button = tk.Radiobutton(self.options_window, text="No", variable=self.ui_var, value="No")
+        ui_no_button.pack()
 
-        rut_label = ttk.Label(ui_window, text="Repository Update Type:")
-        rut_label.grid(column=0, row=1, padx=5, pady=5, sticky="w")
-        rut_update_radio = ttk.Radiobutton(ui_window, text="Update", value="update", variable=self.rut_option)
-        rut_update_radio.grid(column=1, row=1, sticky="w")
-        rut_replace_radio = ttk.Radiobutton(ui_window, text="Replace", value="replace", variable=self.rut_option)
-        rut_replace_radio.grid(column=2, row=1, sticky="w")
+        # Create the Repository Update Type label and radio buttons
+        repo_label = tk.Label(self.options_window, text="Repository Update Type:")
+        repo_label.pack()
+        self.repo_var = tk.StringVar(value="Update")
+        repo_update_button = tk.Radiobutton(self.options_window, text="Update", variable=self.repo_var, value="Update")
+        repo_update_button.pack()
+        repo_replace_button = tk.Radiobutton(self.options_window, text="Replace", variable=self.repo_var, value="Replace")
+        repo_replace_button.pack()
 
-        ra_label = ttk.Label(ui_window, text="Reboot Automatically:")
-        ra_label.grid(column=0, row=2, padx=5, pady=5, sticky="w")
-        ra_yes_radio = ttk.Radiobutton(ui_window, text="Yes", value="yes", variable=self.ra_option)
-        ra_yes_radio.grid(column=1, row=2, sticky="w")
-        ra_no_radio = ttk.Radiobutton(ui_window, text="No", value="no", variable=self.ra_option)
-        ra_no_radio.grid(column=2, row=2, sticky="w")
+        # Create the Reboot Automatically label and radio buttons
+        ra_label = tk.Label(self.options_window, text="Reboot Automatically:")
+        ra_label.pack()
+        self.ra_var = tk.StringVar(value="No")
+        ra_yes_button = tk.Radiobutton(self.options_window, text="Yes", variable=self.ra_var, value="Yes")
+        ra_yes_button.pack()
+        ra_no_button = tk.Radiobutton(self.options_window, text="No", variable=self.ra_var, value="No")
+        ra_no_button.pack()
 
-        # create a button to submit the options and a button to quit the window
-        submit_button = ttk.Button(ui_window, text="Submit", command=self.installation_setup)
-        submit_button.grid(column=1, row=3)
-        quit_button = ttk.Button(ui_window, text="Quit", command=ui_window.destroy)
-        quit_button.grid(column=2, row=3)
+        # Create the Submit and Quit buttons
+        submit_button = tk.Button(self.options_window, text="Submit", command=self.installation_setup)
+        submit_button.pack(side="left")
+        quit_button = tk.Button(self.options_window, text="Quit", command=self.options_window.destroy)
+        quit_button.pack(side="right")
+
+        # If Unattended Installation is selected, automatically select Yes for Reboot Automatically
+        def ui_handler():
+            if self.ui_var.get() == "Yes":
+                self.ra_var.set("Yes")
+
+        self.ui_var.trace_add("write", lambda *args: ui_handler())
+
+        # If Repository Update Type is selected, deselect all other options
+        def repo_handler():
+            if self.repo_var.get() == "Update":
+                self.ui_var.set("No")
+                self.ra_var.set("No")
+
+        self.repo_var.trace_add("write", lambda *args: repo_handler())
+
+        # Wait for user input
+        self.options_window.wait_window()
+
 
     def installation_setup(self):
         # print out the selected options
