@@ -128,6 +128,33 @@ class MyApp:
         print("Unattended Installation Option:", self.ui_option)
         print("Repository Update Type:", self.rut_option)
         print("Reboot Automatically:", self.ra_option)
+    def check_workspace_directory(self):
+        # Get the selected EAI option
+        eai_option = self.eai_var.get()
+
+        # Check if the workspace directory exists for IIB or ACE
+        if eai_option == "IIB":
+            workspace_path = "C:/workspaces/IIB"
+        elif eai_option == "ACE":
+            workspace_path = "C:/workspaces/ACE"
+        else:
+            return False
+
+        if not os.path.exists(workspace_path):
+            messagebox.showerror("Error", f"{workspace_path} does not exist.")
+            return False
+
+        # Check if the version.ini file exists for IIB
+        if eai_option == "IIB":
+            metadata_path = os.path.join(workspace_path, ".metadata")
+            version_path = os.path.join(metadata_path, "version.ini")
+            if not os.path.exists(version_path):
+                messagebox.showerror("Error", f"{version_path} does not exist.")
+                return False
+
+        messagebox.showinfo("Success", "Workspace directory is valid.")
+        return True
+
 
     @staticmethod
     def dummy_encrypt(password):
