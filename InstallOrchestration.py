@@ -1,59 +1,55 @@
 import tkinter as tk
 
 class InstallOrchestration:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("Install Orchestration")
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.geometry('300x150')
+        self.root.title('Install Orchestration')
         
-        # Create label and entry widgets for the user to input data
-        tk.Label(master, text="Enter Data:").grid(row=0, column=0)
-        self.data_entry = tk.Entry(master)
-        self.data_entry.grid(row=0, column=1)
+        self.submit_button = tk.Button(self.root, text='Submit', command=self.select_option)
+        self.submit_button.pack(side='left', padx=10, pady=10)
         
-        # Create submit and quit buttons
-        tk.Button(master, text="Submit", command=self.submit).grid(row=1, column=0)
-        tk.Button(master, text="Quit", command=self.quit).grid(row=1, column=1)
+        self.quit_button = tk.Button(self.root, text='Quit', command=self.root.destroy)
+        self.quit_button.pack(side='right', padx=10, pady=10)
         
-    def submit(self):
-        # Retrieve data from entry widget
-        data = self.data_entry.get()
+        self.top_level_window = tk.Toplevel(self.root)
+        self.top_level_window.title('Select Option')
+        self.top_level_window.geometry('300x100')
         
-        # Do something with data...
+        self.eai_button = tk.Button(self.top_level_window, text='EAI', command=self.select_eai)
+        self.eai_button.pack(side='left', padx=10, pady=10)
         
-        # Clear entry widget
-        self.data_entry.delete(0, tk.END)
+        self.etl_button = tk.Button(self.top_level_window, text='ETL', command=self.select_etl)
+        self.etl_button.pack(side='right', padx=10, pady=10)
+        
+        self.root.mainloop()
     
-    def quit(self):
-        # Close window
-        self.master.destroy()
+    def select_option(self):
+        pass
+    
+    def select_eai(self):
+        self.eai_window = tk.Toplevel(self.root)
+        self.eai_window.title('Select EAI Option')
+        self.eai_window.geometry('300x100')
+        
+        self.iib_button = tk.Button(self.eai_window, text='IIB10', command=self.get_eai_options)
+        self.iib_button.pack(side='left', padx=10, pady=10)
+        
+        self.ace_button = tk.Button(self.eai_window, text='ACE12', command=self.get_eai_options)
+        self.ace_button.pack(side='right', padx=10, pady=10)
+        
+        self.password_button = tk.Button(self.eai_window, text='Password Update', command=self.password_update)
+        self.password_button.pack(side='bottom', padx=10, pady=10)
+    
+    def select_etl(self):
+        pass
+    
+    def get_eai_options(self):
+        pass
+    
+    def password_update(self):
+        pass
 
-# Create top-level window
-root = tk.Tk()
-root.title("Select EAI or ETL")
-
-# Create radio buttons for EAI and ETL
-var = tk.StringVar()
-var.set("EAI")
-eai_button = tk.Radiobutton(root, text="EAI", variable=var, value="EAI")
-etl_button = tk.Radiobutton(root, text="ETL", variable=var, value="ETL")
-eai_button.pack()
-etl_button.pack()
-
-# Create submit and quit buttons
-submit_button = tk.Button(root, text="Submit", command=root.destroy)
-quit_button = tk.Button(root, text="Quit", command=root.destroy)
-submit_button.pack()
-quit_button.pack()
-
-# Run main loop
-root.mainloop()
-
-# Create InstallOrchestration window based on user selection
-if var.get() == "EAI":
-    root = tk.Tk()
-    app = InstallOrchestration(root)
-    root.mainloop()
-elif var.get() == "ETL":
-    root = tk.Tk()
-    app = InstallOrchestration(root)
-    root.mainloop()
+if __name__ == '__main__':
+    InstallOrchestration()
+ 
