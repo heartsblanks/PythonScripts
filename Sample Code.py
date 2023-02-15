@@ -154,6 +154,42 @@ class MyApp:
 
         messagebox.showinfo("Success", "Workspace directory is valid.")
         return True
+    def check_workspace_directory(self):
+        # Get the selected EAI option
+        eai_option = self.eai_var.get()
+
+        # Check if the workspace directory exists for IIB or ACE
+        if eai_option == "IIB":
+            workspace_path = "C:/workspaces/IIB"
+        elif eai_option == "ACE":
+            workspace_path = "C:/workspaces/ACE"
+        else:
+            return False
+
+        if not os.path.exists(workspace_path):
+            # Ask the user if they want to create a new workspace
+            create_workspace = messagebox.askyesno("Create New Workspace",
+                                                   f"{workspace_path} does not exist. Do you want to create a new workspace?")
+            if create_workspace:
+                # Create the new workspace directory with the eai_option
+                os.makedirs(workspace_path)
+            else:
+                # Ask the user for a different workspace location
+                workspace_path = filedialog.askdirectory(initialdir="C:/",
+                                                          title="Select Workspace Directory")
+                if not workspace_path:
+                    return False
+
+        # Check if the version.ini file exists for IIB
+        if eai_option == "IIB":
+            metadata_path = os.path.join(workspace_path, ".metadata")
+            version_path = os.path.join(metadata_path, "version.ini")
+            if not os.path.exists(version_path):
+                messagebox.showerror("Error", f"{version_path} does not exist.")
+                return False
+
+        messagebox.showinfo("Success", "Workspace directory is valid.")
+        return True
 
 
     @staticmethod
