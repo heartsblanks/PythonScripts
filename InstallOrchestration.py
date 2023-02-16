@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 import hashlib
 
 class InstallOrchestration:
@@ -16,24 +17,18 @@ class InstallOrchestration:
         self.create_system_button("ETL", ["DS"])
 
     def setup_styles(self):
-        # Set up custom styles
-        self.master.option_add("*Button.Background", "#4d4d4d")
-        self.master.option_add("*Button.Foreground", "white")
-        self.master.option_add("*Button.activeBackground", "#808080")
-        self.master.option_add("*Button.activeForeground", "white")
-        self.master.option_add("*Button.highlightThickness", 0)
-        self.master.option_add("*Label.Background", "#d9d9d9")
-        self.master.option_add("*Label.Foreground", "#4d4d4d")
-        self.master.option_add("*Radiobutton.Background", "#d9d9d9")
-        self.master.option_add("*Radiobutton.Foreground", "#4d4d4d")
-        self.master.option_add("*Radiobutton.highlightThickness", 0)
-        self.master.option_add("*Entry.Background", "white")
-        self.master.option_add("*Entry.Foreground", "#4d4d4d")
-        self.master.option_add("*Entry.highlightThickness", 0)
+        # Create custom styles
+        style = ttk.Style()
+        style.configure("SystemButton.TButton", background="#4d4d4d", foreground="white", activebackground="#808080", activeforeground="white", highlightthickness=0)
+        style.configure("SubmitButton.TButton", background="#4d4d4d", foreground="white", activebackground="#808080", activeforeground="white", highlightthickness=0)
+        style.configure("QuitButton.TButton", background="#4d4d4d", foreground="white", activebackground="#808080", activeforeground="white", highlightthickness=0)
+        style.configure("OptionLabel.TLabel", background="#d9d9d9", foreground="#4d4d4d")
+        style.configure("Option.TEntry", background="white", foreground="#4d4d4d")
+        style.configure("Option.TRadiobutton", background="#d9d9d9", foreground="#4d4d4d", highlightthickness=0)
 
     def create_system_button(self, system_name, options):
         # Create button
-        button = tk.Button(self.master, text=system_name, command=lambda: self.displaySystemOptions(options), style="SystemButton.TButton")
+        button = ttk.Button(self.master, text=system_name, command=lambda: self.displaySystemOptions(options), style="SystemButton.TButton")
         button.pack(fill="x", padx=10, pady=10)
 
     def displaySystemOptions(self, options):
@@ -46,11 +41,11 @@ class InstallOrchestration:
 
         # Create buttons
         for option in options:
-            button = tk.Button(self.system_options_window, text=option, command=lambda option=option: self.displaySystemSetupOptions(system_type, option), style="SystemButton.TButton")
+            button = ttk.Button(self.system_options_window, text=option, command=lambda option=option: self.displaySystemSetupOptions(system_type, option), style="SystemButton.TButton")
             button.pack(fill="x", padx=10, pady=5)
 
         # Create Password update button
-        password_update_button = tk.Button(self.system_options_window, text="Password update", command=self.passwordUpdate, style="SystemButton.TButton")
+        password_update_button = ttk.Button(self.system_options_window, text="Password update", command=self.passwordUpdate, style="SystemButton.TButton")
         password_update_button.pack(fill="x", padx=10, pady=5)
 
     def setup_system_options_styles(self):
@@ -61,11 +56,10 @@ class InstallOrchestration:
         self.system_options_window.option_add("*Button.highlightThickness", 0)
         self.system_options_window.option_add("*Label.Background", "#d9d9d9")
         self.system_options_window.option_add("*Label.Foreground", "#4d4d4d")
-
     def displaySystemSetupOptions(self, system_type, install_type):
         # Create new top level window
         self.system_setup_options_window = tk.Toplevel(self.master)
-        self.system_setup_options_window.title(system_type + " Setup Options")
+        self.system_setup_options_window.title(f"{system_type} {install_type} Setup")
 
         # Set up custom styles for this window
         self.setup_system_setup_options_styles()
@@ -76,11 +70,11 @@ class InstallOrchestration:
         self.repo_update_var = self.create_label_and_options("Repository", ["Update", "Replace"])
 
         # Create submit button
-        submit_button = tk.Button(self.system_setup_options_window, text="Submit", command=lambda: self.performInstallation(system_type, install_type), style="SubmitButton.TButton")
+        submit_button = ttk.Button(self.system_setup_options_window, text="Submit", command=lambda: self.performInstallation(system_type, install_type), style="SubmitButton.TButton")
         submit_button.pack(pady=10)
 
         # Create quit button
-        quit_button = tk.Button(self.system_setup_options_window, text="Quit", command=self.system_setup_options_window.destroy, style="QuitButton.TButton")
+        quit_button = ttk.Button(self.system_setup_options_window, text="Quit", command=self.system_setup_options_window.destroy, style="QuitButton.TButton")
         quit_button.pack(pady=10)
 
     def setup_system_setup_options_styles(self):
@@ -93,18 +87,18 @@ class InstallOrchestration:
         self.system_setup_options_window.option_add("*Label.Foreground", "#4d4d4d")
 
     def create_label_and_options(self, label_text, option_values):
-        label = tk.Label(self.system_setup_options_window, text=label_text, style="OptionLabel.TLabel")
+        label = ttk.Label(self.system_setup_options_window, text=label_text, style="OptionLabel.TLabel")
         label.pack(pady=5)
         var = tk.StringVar(value=option_values[0])
         for option_value in option_values:
-            radio = tk.Radiobutton(self.system_setup_options_window, text=option_value, variable=var, value=option_value, style="Option.TRadiobutton")
+            radio = ttk.Radiobutton(self.system_setup_options_window, text=option_value, variable=var, value=option_value, style="Option.TRadiobutton")
             radio.pack()
         return var
 
     def create_label_and_entry(self, label_text):
-        label = tk.Label(self.system_setup_options_window, text=label_text, style="OptionLabel.TLabel")
+        label = ttk.Label(self.system_setup_options_window, text=label_text, style="OptionLabel.TLabel")
         label.pack(pady=5)
-        entry = tk.Entry(self.system_setup_options_window, show="*", style="Option.TEntry")
+        entry = ttk.Entry(self.system_setup_options_window, show="*", style="Option.TEntry")
         entry.pack()
         return entry
 
@@ -135,24 +129,18 @@ class InstallOrchestration:
         self.setup_password_update_styles()
 
         # Create HB Password label and entry
-        self.hb_password_label = tk.Label(self.password_update_window, text="HB Password", style="OptionLabel.TLabel")
-        self.hb_password_label.pack(pady=5)
-        self.hb_password_entry = tk.Entry(self.password_update_window, show="*", style="Option.TEntry")
-        self.hb_password_entry.pack()
-
-        # Create HO Password label and
         # entry
-        self.ho_password_label = tk.Label(self.password_update_window, text="HO Password", style="OptionLabel.TLabel")
+        self.ho_password_label = ttk.Label(self.password_update_window, text="HO Password", style="OptionLabel.TLabel")
         self.ho_password_label.pack(pady=5)
-        self.ho_password_entry = tk.Entry(self.password_update_window, show="*", style="Option.TEntry")
+        self.ho_password_entry = ttk.Entry(self.password_update_window, show="*", style="Option.TEntry")
         self.ho_password_entry.pack()
 
         # Create submit button
-        submit_button = tk.Button(self.password_update_window, text="Submit", command=self.encryptAndStorePassword, style="SubmitButton.TButton")
+        submit_button = ttk.Button(self.password_update_window, text="Submit", command=self.encryptAndStorePassword, style="SubmitButton.TButton")
         submit_button.pack(pady=10)
 
         # Create quit button
-        quit_button = tk.Button(self.password_update_window, text="Quit", command=self.password_update_window.destroy, style="QuitButton.TButton")
+        quit_button = ttk.Button(self.password_update_window, text="Quit", command=self.password_update_window.destroy, style="QuitButton.TButton")
         quit_button.pack(pady=10)
 
     def setup_password_update_styles(self):
