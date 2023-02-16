@@ -66,12 +66,14 @@ class InstallOrchestration:
 
         # Create labels and options
         self.installation_type_var = self.create_label_and_options("Unattended installation", ["Yes", "No"])
-        if system_type in ["IIB10", "ACE12"]:
-            self.auto_reboot_var = self.create_label_and_options("Reboot Automatically", ["Yes", "No"])
-            self.hb_password_entry = self.create_label_and_entry("HB Password")
-        if system_type == "IIB10":
-            self.ho_password_entry = self.create_label_and_entry("HO Password")
         self.repo_update_var = self.create_label_and_options("Repository", ["Update", "Replace"])
+        self.hb_password_entry = self.create_label_and_entry("HB Password")
+        if install_type in ["IIB10", "ACE12"]:
+            self.ho_password_entry = self.create_label_and_entry("HO Password")
+            self.auto_reboot_var = self.create_label_and_options("Reboot Automatically", ["Yes", "No"])
+        
+            
+        
 
         # Create submit button
         submit_button = ttk.Button(self.system_setup_options_window, text="Submit", command=lambda: self.performInstallation(system_type, install_type), style="SubmitButton.TButton")
