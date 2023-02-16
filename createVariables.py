@@ -1,5 +1,7 @@
 import os
 import csv
+from tkinter import messagebox
+from tkinter import filedialog
 
 class createVariables:
     def __init__(self, system_type):
@@ -21,11 +23,41 @@ class createVariables:
         var_type = row[5]
 
         if update_path == "Y":
-            os.environ["PATH"] += ";" + var_value
+            if os.path.isabs(var_value):
+                if os.path.exists(var_value):
+                    os.environ["PATH"] += ";" + var_value
+                else:
+                    self.show_error_message(row)
+            else:
+                os.environ["PATH"] += ";" + var_value
 
         if var_type == "E":
-            os.environ[var_name] = var_value
-            self.__dict__[var_name] = var_value
-        elif var_type == "I":
-            self.__dict__[var_name] = var_value
+            if os.path.isabs(var_value):
+                if os.path.exists(var_value):
+                    os.environ[var_name] = var_value
+                    self.__dict__[var_name] = var_value
+                else:
+                    self.show_error_message(row)
+            else:
+                os.environ[var_name] = var_value
+                self.__dict__[var_name] = var_value
 
+        elif var_type == "I":
+            if os.path.isabs(var_value):
+                if os.path.exists(var_value):
+                    self.__dict__[var_name] = var_value
+                else:
+                    self.show_error_message(row)
+            else:
+                self.__dict__[var_name] = var_value
+
+
+
+    def show_error_message(self, row):
+        message = f"Could not create variable for {row[2]} with value {row[3]}. Please update the variable_details.csv file with a valid path."
+        result = messagebox.askyesno("Error", message)
+        if result:
+            file_path = filedialog.askopenfilename(initialdir=".", title="Select CSV file", filetypes=[("CSV files", "*.csv")])
+            os.startfile(file_path)
+        else:
+            raise Exception(message)
