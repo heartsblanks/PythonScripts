@@ -127,6 +127,10 @@ class InstallOrchestration:
         workspace_utils = WorkspaceUtils(install_type)
         workspace_utils.checkWorkspaceDirectory()
 
+        # Create variables
+        variables_creator = createVariables(system_type)
+        variables_creator.create()
+
         # Perform installation
         logging.info(f"Performing {system_type} installation for {install_type} with the following options:")
         logging.info(f"- Unattended installation: {installation_type}")
@@ -138,6 +142,7 @@ class InstallOrchestration:
 
         # Close window
         self.system_setup_options_window.destroy()
+
         
         
 root = tk.Tk()
