@@ -28,13 +28,17 @@ class InstallOrchestration:
 
     def setup_styles(self):
         # Create custom styles
+        custom_styles = {
+            "SystemButton.TButton": {"background": "#4d4d4d", "foreground": "white", "activebackground": "#808080", "activeforeground": "white", "highlightthickness": 0},
+            "SubmitButton.TButton": {"background": "#4d4d4d", "foreground": "white", "activebackground": "#808080", "activeforeground": "white", "highlightthickness": 0},
+            "QuitButton.TButton": {"background": "#4d4d4d", "foreground": "white", "activebackground": "#808080", "activeforeground": "white", "highlightthickness": 0},
+            "OptionLabel.TLabel": {"background": "#d9d9d9", "foreground": "#4d4d4d"},
+            "Option.TEntry": {"background": "white", "foreground": "#4d4d4d"},
+            "Option.TRadiobutton": {"background": "#d9d9d9", "foreground": "#4d4d4d", "highlightthickness": 0},
+        }
         style = ttk.Style()
-        style.configure("SystemButton.TButton", background="#4d4d4d", foreground="white", activebackground="#808080", activeforeground="white", highlightthickness=0)
-        style.configure("SubmitButton.TButton", background="#4d4d4d", foreground="white", activebackground="#808080", activeforeground="white", highlightthickness=0)
-        style.configure("QuitButton.TButton", background="#4d4d4d", foreground="white", activebackground="#808080", activeforeground="white", highlightthickness=0)
-        style.configure("OptionLabel.TLabel", background="#d9d9d9", foreground="#4d4d4d")
-        style.configure("Option.TEntry", background="white", foreground="#4d4d4d")
-        style.configure("Option.TRadiobutton", background="#d9d9d9", foreground="#4d4d4d", highlightthickness=0)
+        for style_name, options in custom_styles.items():
+            style.configure(style_name, **options)
 
     def create_system_button(self, system_name, options):
         # Create button
@@ -61,7 +65,7 @@ class InstallOrchestration:
         password_update_button.pack(fill="x", padx=10, pady=5)
         logging.info(f"Added Password update button to {system_type} options window")
 
-    def setup_system_options_styles(self):
+def setup_system_options_styles(self):
         self.system_options_window.option_add("*Button.Background", "#4d4d4d")
         self.system_options_window.option_add("*Button.Foreground", "white")
         self.system_options_window.option_add("*Button.activeBackground", "#808080")
@@ -149,6 +153,7 @@ class InstallOrchestration:
 
         # Close window
         self.system_setup_options_window.destroy()
+
     def checkWorkspaceDirectory(self, install_type):
         version_file_path = f"C:/Workspaces/{install_type}/.metadata/version.ini"
         if not os.path.exists(version_file_path):
@@ -176,6 +181,7 @@ class InstallOrchestration:
             return
 
         self.workspace_options_window.destroy()
+
     def getCustomWorkspace(self, install_type):
         # Create new top level window
         custom_workspace_window = tk.Toplevel(self.master)
@@ -205,14 +211,15 @@ class InstallOrchestration:
             logging.info(f"Using custom workspace: {self.workspace_path}")
         else:
             messagebox.showerror("Error", f"{install_type} workspace not found at the provided location.")
-    def setup_custom_workspace_styles(self):
-        self.custom_workspace_window.option_add("*Button.Background", "#4d4d4d")
-        self.custom_workspace_window.option_add("*Button.Foreground", "white")
-        self.custom_workspace_window.option_add("*Button.activeBackground", "#808080")
-        self.custom_workspace_window.option_add("*Button.activeForeground", "white")
-        self.custom_workspace_window.option_add("*Button.highlightThickness", 0)
-        self.custom_workspace_window.option_add("*Label.Background", "#d9d9d9")
-        self.custom_workspace_window.option_add("*Label.Foreground", "#4d4d4d")
+
+    def setup_custom_workspace_styles(self, custom_workspace_window):
+        custom_workspace_window.option_add("*Button.Background", "#4d4d4d")
+        custom_workspace_window.option_add("*Button.Foreground", "white")
+        custom_workspace_window.option_add("*Button.activeBackground", "#808080")
+        custom_workspace_window.option_add("*Button.activeForeground", "white")
+        custom_workspace_window.option_add("*Button.highlightThickness", 0)
+        custom_workspace_window.option_add("*Label.Background", "#d9d9d9")
+        custom_workspace_window.option_add("*Label.Foreground", "#4d4d4d")
 
     def passwordUpdate(self):
         # Create new top level window
@@ -268,9 +275,9 @@ class InstallOrchestration:
 
         # Close window
         self.password_update_window.destroy()
-     
 
 
 root = tk.Tk()
 InstallOrchestration(root)
 root.mainloop()
+
