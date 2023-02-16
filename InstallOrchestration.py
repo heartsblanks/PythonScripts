@@ -66,9 +66,11 @@ class InstallOrchestration:
 
         # Create labels and options
         self.installation_type_var = self.create_label_and_options("Unattended installation", ["Yes", "No"])
-        self.auto_reboot_var = self.create_label_and_options("Reboot Automatically", ["Yes", "No"])
-        self.hb_password_entry = self.create_label_and_entry("HB Password")
-        self.ho_password_entry = self.create_label_and_entry("HO Password")
+        if system_type in ["IIB10", "ACE12"]:
+            self.auto_reboot_var = self.create_label_and_options("Reboot Automatically", ["Yes", "No"])
+            self.hb_password_entry = self.create_label_and_entry("HB Password")
+        if system_type == "IIB10":
+            self.ho_password_entry = self.create_label_and_entry("HO Password")
         self.repo_update_var = self.create_label_and_options("Repository", ["Update", "Replace"])
 
         # Create submit button
@@ -78,6 +80,7 @@ class InstallOrchestration:
         # Create quit button
         quit_button = ttk.Button(self.system_setup_options_window, text="Quit", command=self.system_setup_options_window.destroy, style="QuitButton.TButton")
         quit_button.pack(pady=10)
+
 
     def setup_system_setup_options_styles(self):
         self.system_setup_options_window.option_add("*Button.Background", "#4d4d4d")
@@ -107,20 +110,35 @@ class InstallOrchestration:
     def performInstallation(self, system_type, install_type):
         # Get values from form
         installation_type = self.installation_type_var.get()
-        hb_password = self.hb_password_entry.get()
+        if system_type in ["IIB10", "ACE12"]:
+            auto_reboot = self.auto_reboot_var.get()
+            hb_password = self.hb_password_entry.get()
+        else:
+            auto_reboot = "N/A"
+            hb_password = "N/A"
         repo_update = self.repo_update_var.get()
+        if system_type == "IIB10":
+            ho_password = self.ho_password_entry.get()
+        else:
+            ho_password = "N/A"
 
         # Encrypt passwords
         encrypted_hb_password = hashlib.sha256(hb_password.encode()).hexdigest()
+        encrypted_ho_password = hashlib.sha256(ho_password.encode()).hexdigest()
 
         # Perform installation
         print(f"Performing {system_type} installation for {install_type} with the following options:")
         print(f"- Unattended installation: {installation_type}")
-        print(f"- HB Password: {encrypted_hb_password}")
+        if system_type in ["IIB10", "ACE12"]:
+            print(f"- Reboot Automatically: {auto_reboot}")
+            print(f"- HB Password: {encrypted_hb_password}")
+        if system_type == "IIB10":
+            print(f"- HO Password: {encrypted_ho_password}")
         print(f"- Repository update type: {repo_update}")
 
         # Close window
         self.system_setup_options_window.destroy()
+
 
     def passwordUpdate(self):
         # Create new top level window
