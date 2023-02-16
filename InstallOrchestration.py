@@ -133,6 +133,9 @@ class InstallOrchestration:
         encrypted_hb_password = hashlib.sha256(hb_password.encode()).hexdigest()
         encrypted_ho_password = hashlib.sha256(ho_password.encode()).hexdigest()
 
+        # Check workspace directory
+        self.checkWorkspaceDirectory(install_type)
+
         # Perform installation
         logging.info(f"Performing {system_type} installation for {install_type} with the following options:")
         logging.info(f"- Unattended installation: {installation_type}")
@@ -144,6 +147,63 @@ class InstallOrchestration:
 
         # Close window
         self.system_setup_options_window.destroy()
+def checkWorkspaceDirectory(self, install_type):
+    version_file_path = f"C:/Workspaces/{install_type}/.metadata/version.ini"
+    if not os.path.exists(version_file_path):
+        self.workspace_options_window = tk.Toplevel(self.master)
+        self.workspace_options_window.title(f"{install_type} Workspace")
+
+        # Create label
+        label = ttk.Label(self.workspace_options_window, text="Workspace has not been detected. Do you want to create a new workspace within the standard directory?", style="OptionLabel.TLabel")
+        label.pack(pady=5)
+
+        # Create yes button
+        yes_button = ttk.Button(self.workspace_options_window, text="Yes", command=lambda: self.createNewWorkspace(install_type), style="SubmitButton.TButton")
+        yes_button.pack(pady=10)
+
+        # Create no button
+        no_button = ttk.Button(self.workspace_options_window, text="No", command=lambda: self.getCustomWorkspace(install_type), style="QuitButton.TButton")
+        no_button.pack(pady=10)
+
+    def createNewWorkspace(self, install_type):
+        workspace_path = f"C:/Workspaces/{install_type}"
+        os.makedirs(workspace_path, exist_ok=True)
+        version_file_path = f"{workspace_path}/.metadata/version.ini"
+        if not os.path.exists(version_file_path):
+            logging.error(f"Failed to create new workspace for {install_type}")
+            return
+
+        self.workspace_options_window.destroy()
+    def getCustomWorkspace(self, install_type):
+        # Create new top level window
+        custom_workspace_window = tk.Toplevel(self.master)
+        custom_workspace_window.title("Custom Workspace Location")
+
+        # Set up custom styles for this window
+        self.setup_custom_workspace_styles(custom_workspace_window)
+
+        # Create label and entry
+        label = ttk.Label(custom_workspace_window, text=f"Enter the location of the {install_type} workspace:", style="OptionLabel.TLabel")
+        label.pack(pady=5)
+        entry = ttk.Entry(custom_workspace_window, style="Option.TEntry")
+        entry.pack()
+
+        # Create submit button
+        submit_button = ttk.Button(custom_workspace_window, text="Submit", command=lambda: self.checkCustomWorkspace(custom_workspace_window, entry.get(), install_type), style="SubmitButton.TButton")
+        submit_button.pack(pady=10)
+
+        # Create quit button
+        quit_button = ttk.Button(custom_workspace_window, text="Quit", command=custom_workspace_window.destroy, style="QuitButton.TButton")
+        quit_button.pack(pady=10)
+
+    def checkCustomWorkspace(self, custom_workspace_window, workspace_path, install_type):
+        if os.path.exists(os.path.join(workspace_path, install_type, ".metadata", "version.ini")):
+            self.workspace_path = workspace_path
+            custom_workspace_window.destroy()
+            logging.info(f"Using custom workspace: {self.workspace_path}")
+        else:
+            messagebox.showerror("Error", f"{install_type} workspace not found at the provided location.")
+
     def passwordUpdate(self):
         # Create new top level window
         self.password_update_window = tk.Toplevel(self.master)
