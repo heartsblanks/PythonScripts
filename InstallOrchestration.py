@@ -1,6 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
 import hashlib
+import logging
+import os
+
+# Set up logging
+LOG_FILE = "install_orchestration.log"
+if os.path.exists(LOG_FILE):
+    os.remove(LOG_FILE)
+logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG)
 
 class InstallOrchestration:
     def __init__(self, master):
