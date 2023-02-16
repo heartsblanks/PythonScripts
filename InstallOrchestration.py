@@ -28,12 +28,12 @@ class InstallOrchestration:
 
     def create_system_button(self, system_name, options):
         # Create button
-        button = ttk.Button(self.master, text=system_name, command=lambda: self.displaySystemOptions(options), style="SystemButton.TButton")
+        button = ttk.Button(self.master, text=system_name, command=lambda: self.displaySystemOptions(system_name, options), style="SystemButton.TButton")
         button.pack(fill="x", padx=10, pady=10)
-    def displaySystemOptions(self, options):
+    def displaySystemOptions(self, system_type, options):
         # Create new top level window
         self.system_options_window = tk.Toplevel(self.master)
-        system_type = options[0]
+        
         self.system_options_window.title(f"{system_type} Options")
 
         # Set up custom styles for this window
@@ -80,6 +80,7 @@ class InstallOrchestration:
         # Create quit button
         quit_button = ttk.Button(self.system_setup_options_window, text="Quit", command=self.system_setup_options_window.destroy, style="QuitButton.TButton")
         quit_button.pack(pady=10)
+        self.system_options_window.destroy()
 
     def setup_system_setup_options_styles(self):
         self.system_setup_options_window.option_add("*Button.Background", "#4d4d4d")
@@ -109,17 +110,16 @@ class InstallOrchestration:
     def performInstallation(self, system_type, install_type):
         # Get values from form
         installation_type = self.installation_type_var.get()
-        if system_type in ["IIB10", "ACE12"]:
+        if install_type in ["IIB10", "ACE12"]:
             auto_reboot = self.auto_reboot_var.get()
-            hb_password = self.hb_password_entry.get()
+            ho_password = self.ho_password_entry.get()
+            
         else:
             auto_reboot = "N/A"
-            hb_password = "N/A"
-        repo_update = self.repo_update_var.get()
-        if system_type == "IIB10":
-            ho_password = self.ho_password_entry.get()
-        else:
             ho_password = "N/A"
+        repo_update = self.repo_update_var.get()
+        hb_password = self.hb_password_entry.get()
+     
 
         # Encrypt passwords
         encrypted_hb_password = hashlib.sha256(hb_password.encode()).hexdigest()
@@ -128,11 +128,12 @@ class InstallOrchestration:
         # Perform installation
         print(f"Performing {system_type} installation for {install_type} with the following options:")
         print(f"- Unattended installation: {installation_type}")
-        if system_type in ["IIB10", "ACE12"]:
+        print(f"- HB Password: {encrypted_hb_password}")
+        if install_type in ["IIB10", "ACE12"]:
             print(f"- Reboot Automatically: {auto_reboot}")
-            print(f"- HB Password: {encrypted_hb_password}")
-        if system_type == "IIB10":
             print(f"- HO Password: {encrypted_ho_password}")
+            
+           
         print(f"- Repository update type: {repo_update}")
 
         # Close window
