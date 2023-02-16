@@ -309,6 +309,61 @@ def performInstallation(self, system_type, install_type):
 
     # Close window
     self.system_setup_options_window.destroy()
+import os
+
+class CreateVariables:
+    def __init__(self, system_type, install_type):
+        self.system_type = system_type
+        self.install_type = install_type
+
+        # Set up variable lists
+        self.system_vars = []
+        self.path_vars = []
+        self.instance_vars = []
+
+        # Set up variables based on system and installation type
+        if install_type == "IIB10":
+            if system_type == "EAI":
+                self.system_vars = ["IIB_NODE", "IIB_SERVER_NAME"]
+                self.path_vars = [r"C:\IBM\IIB\10.0.0.10-WS\server\bin"]
+                self.instance_vars = ["broker_name", "execution_group_name"]
+            elif system_type == "ETL":
+                self.system_vars = ["IIB_NODE"]
+                self.path_vars = [r"C:\IBM\IIB\10.0.0.10-WS\server\bin"]
+                self.instance_vars = ["broker_name"]
+        elif install_type == "ACE12":
+            if system_type == "EAI":
+                self.system_vars = ["ACE_NODE", "ACE_SERVER_NAME"]
+                self.path_vars = [r"C:\Program Files\IBM\ACE\11.0.0.11\server\bin"]
+                self.instance_vars = ["integration_server_name"]
+            elif system_type == "ETL":
+                self.system_vars = ["ACE_NODE"]
+                self.path_vars = [r"C:\Program Files\IBM\ACE\11.0.0.11\server\bin"]
+                self.instance_vars = ["integration_server_name"]
+        elif install_type == "DS":
+            if system_type == "ETL":
+                self.path_vars = [r"C:\IBM\InformationServer\Clients\Classic"]
+                self.instance_vars = ["ds_project_path"]
+
+        # Set up variables
+        self.create_system_variables()
+        self.update_path_variable()
+        self.create_instance_variables()
+
+    def create_system_variables(self):
+        for var_name in self.system_vars:
+            os.environ[var_name] = ""
+
+    def update_path_variable(self):
+        path = os.environ.get("PATH", "")
+        for path_var in self.path_vars:
+            if path_var not in path:
+                path += ";" + path_var
+        os.environ["PATH"] = path
+
+    def create_instance_variables(self):
+        for var_name in self.instance_vars:
+            setattr(self, var_name, "")
 
 
 root = tk.Tk()
