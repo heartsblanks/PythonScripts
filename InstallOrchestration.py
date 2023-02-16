@@ -38,10 +38,11 @@ class InstallOrchestration:
         # Create button
         button = ttk.Button(self.master, text=system_name, command=lambda: self.displaySystemOptions(system_name, options), style="SystemButton.TButton")
         button.pack(fill="x", padx=10, pady=10)
+        logging.info(f"Created {system_name} button")
+
     def displaySystemOptions(self, system_type, options):
         # Create new top level window
         self.system_options_window = tk.Toplevel(self.master)
-        
         self.system_options_window.title(f"{system_type} Options")
 
         # Set up custom styles for this window
@@ -51,11 +52,12 @@ class InstallOrchestration:
         for option in options:
             button = ttk.Button(self.system_options_window, text=option, command=lambda option=option: self.displaySystemSetupOptions(system_type, option), style="SystemButton.TButton")
             button.pack(fill="x", padx=10, pady=5)
+            logging.info(f"Added {option} button to {system_type} options window")
 
         # Create Password update button
         password_update_button = ttk.Button(self.system_options_window, text="Password update", command=self.passwordUpdate, style="SystemButton.TButton")
         password_update_button.pack(fill="x", padx=10, pady=5)
-
+        logging.info(f"Added Password update button to {system_type} options window")
 
     def setup_system_options_styles(self):
         self.system_options_window.option_add("*Button.Background", "#4d4d4d")
@@ -65,6 +67,7 @@ class InstallOrchestration:
         self.system_options_window.option_add("*Button.highlightThickness", 0)
         self.system_options_window.option_add("*Label.Background", "#d9d9d9")
         self.system_options_window.option_add("*Label.Foreground", "#4d4d4d")
+
     def displaySystemSetupOptions(self, system_type, install_type):
         # Create new top level window
         self.system_setup_options_window = tk.Toplevel(self.master)
@@ -114,93 +117,34 @@ class InstallOrchestration:
         entry = ttk.Entry(self.system_setup_options_window, show="*", style="Option.TEntry")
         entry.pack()
         return entry
-
-    def performInstallation(self, system_type, install_type):
-        # Get values from form
-        installation_type = self.installation_type_var.get()
-        if install_type in ["IIB10", "ACE12"]:
-            auto_reboot = self.auto_reboot_var.get()
-            ho_password = self.ho_password_entry.get()
-            
-        else:
-            auto_reboot = "N/A"
-            ho_password = "N/A"
-        repo_update = self.repo_update_var.get()
-        hb_password = self.hb_password_entry.get()
-     
-
-        # Encrypt passwords
-        encrypted_hb_password = hashlib.sha256(hb_password.encode()).hexdigest()
-        encrypted_ho_password = hashlib.sha256(ho_password.encode()).hexdigest()
-
-        # Perform installation
-        print(f"Performing {system_type} installation for {install_type} with the following options:")
-        print(f"- Unattended installation: {installation_type}")
-        print(f"- HB Password: {encrypted_hb_password}")
-        if install_type in ["IIB10", "ACE12"]:
-            print(f"- Reboot Automatically: {auto_reboot}")
-            print(f"- HO Password: {encrypted_ho_password}")
-            
-           
-        print(f"- Repository update type: {repo_update}")
-
-        # Close window
-        self.system_setup_options_window.destroy()
-
-
-    def passwordUpdate(self):
-        # Create new top level window
-        self.password_update_window = tk.Toplevel(self.master)
-        self.password_update_window.title("Password Update")
-
-        # Set up custom styles for this window
-        self.setup_password_update_styles()
-
-        # Create HB Password label and entry
-        self.hb_password_label = ttk.Label(self.password_update_window, text="HB Password", style="OptionLabel.TLabel")
-        self.hb_password_label.pack(pady=5)
-        self.hb_password_entry = ttk.Entry(self.password_update_window, show="*", style="Option.TEntry")
-        self.hb_password_entry.pack()
-
-        # Create HO Password label and entry
-        self.ho_password_label = ttk.Label(self.password_update_window, text="HO Password", style="OptionLabel.TLabel")
-        self.ho_password_label.pack(pady=5)
-        self.ho_password_entry = ttk.Entry(self.password_update_window, show="*", style="Option.TEntry")
-        self.ho_password_entry.pack()
-
-        # Create submit button
-        submit_button = ttk.Button(self.password_update_window, text="Submit", command=self.encryptAndStorePassword, style="SubmitButton.TButton")
-        submit_button.pack(pady=10)
-
-        # Create quit button
-        quit_button = ttk.Button(self.password_update_window, text="Quit", command=self.password_update_window.destroy, style="QuitButton.TButton")
-        quit_button.pack(pady=10)
-
-
-    def setup_password_update_styles(self):
-        self.password_update_window.option_add("*Button.Background", "#4d4d4d")
-        self.password_update_window.option_add("*Button.Foreground", "white")
-        self.password_update_window.option_add("*Button.activeBackground", "#808080")
-        self.password_update_window.option_add("*Button.activeForeground", "white")
-        self.password_update_window.option_add("*Button.highlightThickness", 0)
-        self.password_update_window.option_add("*Label.Background", "#d9d9d9")
-        self.password_update_window.option_add("*Label.Foreground", "#4d4d4d")
-
-    def encryptAndStorePassword(self):
-        # Get passwords from form
-        hb_password = self.hb_password_entry.get()
+def performInstallation(self, system_type, install_type):
+    # Get values from form
+    installation_type = self.installation_type_var.get()
+    if install_type in ["IIB10", "ACE12"]:
+        auto_reboot = self.auto_reboot_var.get()
         ho_password = self.ho_password_entry.get()
+    else:
+        auto_reboot = "N/A"
+        ho_password = "N/A"
+    repo_update = self.repo_update_var.get()
+    hb_password = self.hb_password_entry.get()
 
-        # Encrypt passwords
-        encrypted_hb_password = hashlib.sha256(hb_password.encode()).hexdigest()
-        encrypted_ho_password = hashlib.sha256(ho_password.encode()).hexdigest()
+    # Encrypt passwords
+    encrypted_hb_password = hashlib.sha256(hb_password.encode()).hexdigest()
+    encrypted_ho_password = hashlib.sha256(ho_password.encode()).hexdigest()
 
-        # Store passwords (replace with appropriate code for your application)
-        print(f"Storing HB password: {encrypted_hb_password}")
-        print(f"Storing HO password: {encrypted_ho_password}")
+    # Perform installation
+    logging.info(f"Performing {system_type} installation for {install_type} with the following options:")
+    logging.info(f"- Unattended installation: {installation_type}")
+    logging.info(f"- HB Password: {encrypted_hb_password}")
+    if install_type in ["IIB10", "ACE12"]:
+        logging.info(f"- Reboot Automatically: {auto_reboot}")
+        logging.info(f"- HO Password: {encrypted_ho_password}")
+    logging.info(f"- Repository update type: {repo_update}")
 
-        # Close window
-        self.password_update_window.destroy()
+    # Close window
+    self.system_setup_options_window.destroy()
+
 
 root = tk.Tk()
 InstallOrchestration(root)
