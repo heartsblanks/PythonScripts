@@ -149,23 +149,23 @@ class InstallOrchestration:
 
         # Close window
         self.system_setup_options_window.destroy()
-def checkWorkspaceDirectory(self, install_type):
-    version_file_path = f"C:/Workspaces/{install_type}/.metadata/version.ini"
-    if not os.path.exists(version_file_path):
-        self.workspace_options_window = tk.Toplevel(self.master)
-        self.workspace_options_window.title(f"{install_type} Workspace")
+    def checkWorkspaceDirectory(self, install_type):
+        version_file_path = f"C:/Workspaces/{install_type}/.metadata/version.ini"
+        if not os.path.exists(version_file_path):
+            self.workspace_options_window = tk.Toplevel(self.master)
+            self.workspace_options_window.title(f"{install_type} Workspace")
 
-        # Create label
-        label = ttk.Label(self.workspace_options_window, text="Workspace has not been detected. Do you want to create a new workspace within the standard directory?", style="OptionLabel.TLabel")
-        label.pack(pady=5)
+            # Create label
+            label = ttk.Label(self.workspace_options_window, text="Workspace has not been detected. Do you want to create a new workspace within the standard directory?", style="OptionLabel.TLabel")
+            label.pack(pady=5)
 
-        # Create yes button
-        yes_button = ttk.Button(self.workspace_options_window, text="Yes", command=lambda: self.createNewWorkspace(install_type), style="SubmitButton.TButton")
-        yes_button.pack(pady=10)
+            # Create yes button
+            yes_button = ttk.Button(self.workspace_options_window, text="Yes", command=lambda: self.createNewWorkspace(install_type), style="SubmitButton.TButton")
+            yes_button.pack(pady=10)
 
-        # Create no button
-        no_button = ttk.Button(self.workspace_options_window, text="No", command=lambda: self.getCustomWorkspace(install_type), style="QuitButton.TButton")
-        no_button.pack(pady=10)
+            # Create no button
+            no_button = ttk.Button(self.workspace_options_window, text="No", command=lambda: self.getCustomWorkspace(install_type), style="QuitButton.TButton")
+            no_button.pack(pady=10)
 
     def createNewWorkspace(self, install_type):
         workspace_path = f"C:/Workspaces/{install_type}"
@@ -205,14 +205,14 @@ def checkWorkspaceDirectory(self, install_type):
             logging.info(f"Using custom workspace: {self.workspace_path}")
         else:
             messagebox.showerror("Error", f"{install_type} workspace not found at the provided location.")
-def setup_custom_workspace_styles(self):
-    self.custom_workspace_window.option_add("*Button.Background", "#4d4d4d")
-    self.custom_workspace_window.option_add("*Button.Foreground", "white")
-    self.custom_workspace_window.option_add("*Button.activeBackground", "#808080")
-    self.custom_workspace_window.option_add("*Button.activeForeground", "white")
-    self.custom_workspace_window.option_add("*Button.highlightThickness", 0)
-    self.custom_workspace_window.option_add("*Label.Background", "#d9d9d9")
-    self.custom_workspace_window.option_add("*Label.Foreground", "#4d4d4d")
+    def setup_custom_workspace_styles(self):
+        self.custom_workspace_window.option_add("*Button.Background", "#4d4d4d")
+        self.custom_workspace_window.option_add("*Button.Foreground", "white")
+        self.custom_workspace_window.option_add("*Button.activeBackground", "#808080")
+        self.custom_workspace_window.option_add("*Button.activeForeground", "white")
+        self.custom_workspace_window.option_add("*Button.highlightThickness", 0)
+        self.custom_workspace_window.option_add("*Label.Background", "#d9d9d9")
+        self.custom_workspace_window.option_add("*Label.Foreground", "#4d4d4d")
 
     def passwordUpdate(self):
         # Create new top level window
