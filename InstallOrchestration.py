@@ -205,6 +205,14 @@ def checkWorkspaceDirectory(self, install_type):
             logging.info(f"Using custom workspace: {self.workspace_path}")
         else:
             messagebox.showerror("Error", f"{install_type} workspace not found at the provided location.")
+def setup_custom_workspace_styles(self):
+    self.custom_workspace_window.option_add("*Button.Background", "#4d4d4d")
+    self.custom_workspace_window.option_add("*Button.Foreground", "white")
+    self.custom_workspace_window.option_add("*Button.activeBackground", "#808080")
+    self.custom_workspace_window.option_add("*Button.activeForeground", "white")
+    self.custom_workspace_window.option_add("*Button.highlightThickness", 0)
+    self.custom_workspace_window.option_add("*Label.Background", "#d9d9d9")
+    self.custom_workspace_window.option_add("*Label.Foreground", "#4d4d4d")
 
     def passwordUpdate(self):
         # Create new top level window
