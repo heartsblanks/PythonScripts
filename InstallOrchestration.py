@@ -66,7 +66,9 @@ class InstallOrchestration:
 
         # Create labels and options
         self.installation_type_var = self.create_label_and_options("Unattended installation", ["Yes", "No"])
+        self.auto_reboot_var = self.create_label_and_options("Reboot Automatically", ["Yes", "No"])
         self.hb_password_entry = self.create_label_and_entry("HB Password")
+        self.ho_password_entry = self.create_label_and_entry("HO Password")
         self.repo_update_var = self.create_label_and_options("Repository", ["Update", "Replace"])
 
         # Create submit button
@@ -129,7 +131,12 @@ class InstallOrchestration:
         self.setup_password_update_styles()
 
         # Create HB Password label and entry
-        # entry
+        self.hb_password_label = ttk.Label(self.password_update_window, text="HB Password", style="OptionLabel.TLabel")
+        self.hb_password_label.pack(pady=5)
+        self.hb_password_entry = ttk.Entry(self.password_update_window, show="*", style="Option.TEntry")
+        self.hb_password_entry.pack()
+
+        # Create HO Password label and entry
         self.ho_password_label = ttk.Label(self.password_update_window, text="HO Password", style="OptionLabel.TLabel")
         self.ho_password_label.pack(pady=5)
         self.ho_password_entry = ttk.Entry(self.password_update_window, show="*", style="Option.TEntry")
@@ -142,6 +149,7 @@ class InstallOrchestration:
         # Create quit button
         quit_button = ttk.Button(self.password_update_window, text="Quit", command=self.password_update_window.destroy, style="QuitButton.TButton")
         quit_button.pack(pady=10)
+
 
     def setup_password_update_styles(self):
         self.password_update_window.option_add("*Button.Background", "#4d4d4d")
