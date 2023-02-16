@@ -275,6 +275,40 @@ def setup_system_options_styles(self):
 
         # Close window
         self.password_update_window.destroy()
+def performInstallation(self, system_type, install_type):
+    # Get values from form
+    installation_type = self.installation_type_var.get()
+    if install_type in ["IIB10", "ACE12"]:
+        auto_reboot = self.auto_reboot_var.get()
+        ho_password = self.ho_password_entry.get()
+    else:
+        auto_reboot = "N/A"
+        ho_password = "N/A"
+    repo_update = self.repo_update_var.get()
+    hb_password = self.hb_password_entry.get()
+
+    # Encrypt passwords
+    encrypted_hb_password = hashlib.sha256(hb_password.encode()).hexdigest()
+    encrypted_ho_password = hashlib.sha256(ho_password.encode()).hexdigest()
+
+    # Check workspace directory
+    self.checkWorkspaceDirectory(install_type)
+
+    # Create system variables
+    variables = createVariables(system_type, install_type)
+
+    # Perform installation
+    logging.info(f"Performing {system_type} installation for {install_type} with the following options:")
+    logging.info(f"- Unattended installation: {installation_type}")
+    logging.info(f"- HB Password: {encrypted_hb_password}")
+    if install_type in ["IIB10", "ACE12"]:
+        logging.info(f"- Reboot Automatically: {auto_reboot}")
+        logging.info(f"- HO Password: {encrypted_ho_password}")
+    logging.info(f"- Repository update type: {repo_update}")
+    logging.info(f"- System variables: {variables}")
+
+    # Close window
+    self.system_setup_options_window.destroy()
 
 
 root = tk.Tk()
