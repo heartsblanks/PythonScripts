@@ -2,8 +2,10 @@ import os
 import tkinter as tk
 from tkinter import messagebox
 
-
 class WorkspaceUtils:
+    logging.basicConfig(filename=LOG_FILE, filemode='a', level=logging.DEBUG)
+
+
     def __init__(self, install_type):
         self.install_type = install_type
         self.workspace_path = None
@@ -25,6 +27,8 @@ class WorkspaceUtils:
             # Create no button
             no_button = tk.Button(self.workspace_options_window, text="No", command=lambda: self.getCustomWorkspace())
             no_button.pack(pady=10)
+        else:
+            self.logger.info(f"{self.install_type} workspace has been detected.")
 
     def createNewWorkspace(self):
         workspace_path = f"C:/Workspaces/{self.install_type}"
@@ -32,10 +36,12 @@ class WorkspaceUtils:
         version_file_path = f"{workspace_path}/.metadata/version.ini"
         if not os.path.exists(version_file_path):
             messagebox.showerror("Error", f"Failed to create new workspace for {self.install_type}")
+            self.logger.error(f"Failed to create new workspace for {self.install_type}")
             return
 
         self.workspace_options_window.destroy()
         self.workspace_path = workspace_path
+        self.logger.info(f"{self.install_type} workspace has been created at {self.workspace_path}.")
 
     def getCustomWorkspace(self):
         # Create new top level window
@@ -60,5 +66,8 @@ class WorkspaceUtils:
         if os.path.exists(os.path.join(workspace_path, self.install_type, ".metadata", "version.ini")):
             self.workspace_path = workspace_path
             custom_workspace_window.destroy()
+            self.logger.info(f"{self.install_type} workspace has been set to {self.workspace_path}.")
         else:
             messagebox.showerror("Error", f"{self.install_type} workspace not found at the provided location.")
+            self.logger.error(f"{self.install_type} workspace not found at {workspace_path}.")
+
