@@ -3,7 +3,9 @@ import tkinter as tk
 from tkinter import messagebox
 
 class WorkspaceUtils:
-    logging.basicConfig(filename=LOG_FILE, filemode='a', level=logging.DEBUG)
+    LOG_FILE = "install_orchestration.log"
+    logging.basicConfig(filename=LOG_FILE, filemode='a', level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
+
 
 
     def __init__(self, install_type):
