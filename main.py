@@ -1,5 +1,7 @@
 import os
 import tkinter as tk
+import time
+from tkinter import ttk
 from tkinter import messagebox
 from tkinter import ttk
 import hashlib
@@ -111,6 +113,8 @@ class InstallOrchestration:
         # Close window
         self.password_update_window.destroy()
 
+
+
     def performInstallation(self, system_type, install_type):
         # Get values from form
         installation_type = self.installation_type_var.get()
@@ -145,12 +149,47 @@ class InstallOrchestration:
 
         # Install plugins
         plugin_installer = installPlugins(system_type)
+        
+        # Create progress bar and style
+        progress_bar = ttk.Progressbar(self.system_setup_options_window, mode="determinate")
+        progress_bar.pack(fill="x", padx=10, pady=10)
+        style = ttk.Style()
+        style.theme_use('default')
+        style.configure("green.Horizontal.TProgressbar", foreground='green', background='green')
+
+        # Set maximum value for progress bar based on number of plugin installs
+        num_plugin_installs = 6
+        progress_bar["maximum"] = num_plugin_installs
+
+        # Install IIB toolkit plugin
         plugin_installer.install_iib_toolkit_plugin()
+        progress_bar["value"] = 1
+        self.system_setup_options_window.update()
+
+        # Install ACE toolkit plugin
         plugin_installer.install_ace_toolkit_plugin()
+        progress_bar["value"] = 2
+        self.system_setup_options_window.update()
+
+        # Install Eclipse plugin
         plugin_installer.install_eclipse_plugin()
+        progress_bar["value"] = 3
+        self.system_setup_options_window.update()
+
+        # Install Maven CLI
         plugin_installer.install_maven_cli()
+        progress_bar["value"] = 4
+        self.system_setup_options_window.update()
+
+        # Install JRE
         plugin_installer.install_jre()
+        progress_bar["value"] = 5
+        self.system_setup_options_window.update()
+
+        # Install Maven plugin
         plugin_installer.install_maven_plugin()
+        progress_bar["value"] = 6
+        self.system_setup_options_window.update()
 
         # Perform installation
         logging.info(f"Performing {system_type} installation for {install_type} with the following options:")
@@ -163,6 +202,7 @@ class InstallOrchestration:
 
         # Close window
         self.system_setup_options_window.destroy()
+
 
         
         
