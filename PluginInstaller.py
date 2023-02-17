@@ -7,9 +7,9 @@ import logging
 # Local file paths for plugin installation
 IIB_TOOLKIT_PLUGIN_PATH = r"C:\temp\iib_toolkit_plugin.zip"
 ACE_TOOLKIT_PLUGIN_PATH = r"C:\temp\ace_toolkit_plugin.zip"
+MAVEN_CLI_URL = r"https://repo1.maven.org/maven2/com/github/eirslett/maven-frontend-plugin/1.10.0/maven-frontend-plugin-1.10.0.jar"
 MAVEN_CLI_PATH = r"C:\apache-maven-3.8.1-bin.zip"
 ECLIPSE_PLUGIN_URL = "https://download.eclipse.org/releases/latest"
-MAVEN_PLUGIN_URL = "https://repo1.maven.org/maven2/com/github/eirslett/maven-frontend-plugin/1.10.0/maven-frontend-plugin-1.10.0.jar"
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class PluginInstaller:
 
     def install_maven_plugin(self):
         try:
-            urllib.request.urlretrieve(MAVEN_PLUGIN_URL, "maven-frontend-plugin.jar")
+            urllib.request.urlretrieve(MAVEN_CLI_URL, "maven-frontend-plugin.jar")
             shutil.move("maven-frontend-plugin.jar", os.path.join(os.environ["MAVEN_HOME"], "lib", "ext"))
         except:
             logger.exception("Failed to install Maven plugin.")
