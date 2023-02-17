@@ -28,9 +28,9 @@ class CheckConnections:
     
     def check_command(self, command):
         try:
-            os.system(command)
+            subprocess.run(command, check=True, shell=True)
             logging.info(f"Command '{command}' successful")
-        except:
-            message = f"Command '{command}' failed. Please check that it is installed and on the PATH."
+        except subprocess.CalledProcessError as e:
+            message = f"Command '{command}' failed: {e}"
             logging.error(message)
             raise Exception(message)
