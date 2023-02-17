@@ -6,6 +6,10 @@ import hashlib
 import logging
 from WorkspaceFunctions import WorkspaceUtils
 from createVariables import createVariables
+from checkConnections import checkConnections
+from checkOutProjects import checkOutProjects
+from installPlugins import installPlugins
+
 
 # Set up logging
 LOG_FILE = "install_orchestration.log"
@@ -130,6 +134,23 @@ class InstallOrchestration:
         # Create variables
         variables_creator = createVariables(system_type)
         variables_creator.create()
+        
+        # Check connections
+        connections_checker = checkConnections()
+        connections_checker.check()
+
+        # Check out projects
+        projects_checker = checkOutProjects(system_type)
+        projects_checker.checkOut()
+
+        # Install plugins
+        plugin_installer = installPlugins(system_type)
+        plugin_installer.install_iib_toolkit_plugin()
+        plugin_installer.install_ace_toolkit_plugin()
+        plugin_installer.install_eclipse_plugin()
+        plugin_installer.install_maven_cli()
+        plugin_installer.install_jre()
+        plugin_installer.install_maven_plugin()
 
         # Perform installation
         logging.info(f"Performing {system_type} installation for {install_type} with the following options:")
