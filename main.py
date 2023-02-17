@@ -78,6 +78,56 @@ class InstallOrchestration:
         system_setup_options.create_window()
 
     def performInstallation(self, system_type, install_type, options):
-        # Check workspace directory
-        workspace_utils = WorkspaceUtils(install_type)
-        workspace_utils.check
+    # Check workspace directory
+    workspace_utils = WorkspaceUtils(install_type)
+    workspace_utils.checkWorkspaceDirectory()
+
+    # Create variables
+    variables_creator = createVariables(system_type)
+    variables_creator.createVariables()
+    logging.info(f"Created variables for {system_type} {install_type}")
+
+    # Check connections
+    connections_checker = checkConnections(system_type, options)
+    connections_checker.checkConnections()
+    logging.info(f"Checked connections for {system_type} {install_type}")
+
+    # Check out projects
+    projects_checker = checkOutProjects(system_type)
+    projects_checker.checkOutProjects()
+    logging.info(f"Checked out projects for {system_type} {install_type}")
+
+    # Install plugins
+    plugins_installer = installPlugins(system_type)
+    plugins_installer.installPlugins()
+    logging.info(f"Installed plugins for {system_type} {install_type}")
+
+    # Perform installation
+    installer = Installation(system_type, install_type)
+    installer.performInstallation()
+    logging.info(f"Performed installation for {system_type} {install_type}")
+
+        # Check connections
+        connections_checker = checkConnections()
+        connections_checker.checkMQConnections()
+
+        # Check out projects
+        projects_checker = checkOutProjects(install_type)
+        projects_checker.checkoutProjects()
+
+        # Install plugins
+        plugins_installer = installPlugins(install_type)
+        plugins_installer.installPlugins()
+
+        # Create progress bar
+        progress_bar = ProgressBar(self.master, "Installation Progress", 4)
+
+        # Start installation
+        install_process = Installation(system_type, install_type, options)
+        install_process.install(progress_bar)
+
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = InstallOrchestration(root)
+    root.mainloop()
+
