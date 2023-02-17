@@ -113,7 +113,7 @@ class InstallOrchestration:
         self.system_setup_options_window.option_add("*Button.activeForeground", "white")
         self.system_setup_options_window.option_add("*Button.highlightThickness", 0)
         self.system_setup_options_window.option_add("*Label.Background", "#d9d9d9")
-        self.system_setup_options_window.option_add("*Label.Foreground", "#4d4d4d
+        self.system_setup_options_window.option_add("*Label.Foreground", "#4d4d4d")
     
         
     def create_label_and_options(self, label_text, option_values):
