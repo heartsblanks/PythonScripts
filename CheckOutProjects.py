@@ -1,46 +1,48 @@
-import subprocess
 import os
+import subprocess
+import logging
 
 class CheckOutProjects:
-    def __init__(self, system_type, git_repo, cvs_repo, ssh_key):
+    def __init__(self, system_type):
         self.system_type = system_type
-        self.git_repo = git_repo
-        self.cvs_repo = cvs_repo
-        self.ssh_key = ssh_key
+        self.log_file = "checkout.log"
 
-    def checkout(self):
-        # Checkout Git project
-        if self.git_repo:
-            git_command = ["git", "clone", self.git_repo]
-            git_env = os.environ.copy()
-            git_env["GIT_SSH_COMMAND"] = f"ssh -i {self.ssh_key}"
-            git_process = subprocess.run(git_command, env=git_env)
-            if git_process.returncode != 0:
-                print(f"Failed to checkout Git repository {self.git_repo}")
-            else:
-                print(f"Checked out Git repository {self.git_repo}")
+    def checkout_projects(self):
+        logging.basicConfig(filename=self.log_file, level=logging.DEBUG)
 
-        # Checkout CVS project
-        if self.cvs_repo:
-            if self.system_type == "EAI":
-                cvs_command = ["cvs", "-d", self.cvs_repo, "login"]
-            else:
-                cvs_command = ["cvs", "-d", self.cvs_repo, "login", "-l", "DS"]
-            cvs_env = os.environ.copy()
-            cvs_env["CVS_RSH"] = f"ssh -i {self.ssh_key}"
-            cvs_process = subprocess.run(cvs_command, env=cvs_env)
-            if cvs_process.returncode != 0:
-                print(f"Failed to log in to CVS repository {self.cvs_repo}")
-                return
+        try:
+            logging.info(f"Starting checkout process for {self.system_type} projects")
 
             if self.system_type == "EAI":
-                cvs_command = ["cvs", "-d", self.cvs_repo, "co", "EAI"]
+                # Check out EAI project from CVS
+                self.checkout_cvs_project("EAI")
             else:
-                cvs_command = ["cvs", "-d", self.cvs_repo, "co", "ETL"]
-            cvs_env = os.environ.copy()
-            cvs_env["CVS_RSH"] = f"ssh -i {self.ssh_key}"
-            cvs_process = subprocess.run(cvs_command, env=cvs_env)
-            if cvs_process.returncode != 0:
-                print(f"Failed to checkout CVS repository {self.cvs_repo}")
-            else:
-                print(f"Checked out CVS repository {self.cvs_repo}")
+                # Check out ETL projects from GIT
+                self.checkout_git_project("DS")
+
+            logging.info(f"Finished checkout process for {self.system_type} projects")
+        except Exception as e:
+            logging.error(f"Error checking out projects: {e}")
+            raise
+
+    def checkout_cvs_project(self, project_name):
+        logging.info(f"Checking out {project_name} project from CVS")
+
+        # Run CVS checkout command
+        try:
+            cmd = f"cvs checkout {project_name}"
+            subprocess.check_output(cmd, shell=True)
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error checking out {project_name} project: {e}")
+            raise
+
+    def checkout_git_project(self, project_name):
+        logging.info(f"Checking out {project_name} project from GIT")
+
+        # Run GIT checkout command
+        try:
+            cmd = f"git clone git@github.com:myorg/{project_name}.git"
+            subprocess.check_output(cmd, shell=True)
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error checking out {project_name} project: {e}")
+            raise
