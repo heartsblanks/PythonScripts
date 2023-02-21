@@ -1,17 +1,32 @@
-from workspace_utils import WorkspaceUtils
+import csv
+import json
 
-class InstallOrchestration:
-    def __init__(self, master):
-        # ...
-        self.workspace_utils = WorkspaceUtils(install_type)
+csv_file = 'data.csv'
+json_file = 'data.json'
 
-    def performInstallation(self, system_type, install_type):
-        # ...
-        self.workspace_utils.checkWorkspaceDirectory()
-        if self.workspace_utils.workspace_path is None:
-            return
+data = {'IIB10': [], 'EAI': [], 'ETL': [], 'ACE12': [], 'DS': [], 'GIT': [], 'CVS': [], 'MAVEN': [], 'Common': []}
 
-        # Generate self variables
-        self.create_self_variables()
+with open(csv_file, 'r') as file:
+    reader = csv.DictReader(file)
+    for row in reader:
+        if row['IIB10'] == 'Y':
+            data['IIB10'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['EAI'] == 'Y':
+            data['EAI'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['ETL'] == 'Y':
+            data['ETL'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['ACE12'] == 'Y':
+            data['ACE12'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['DS'] == 'Y':
+            data['DS'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['GIT'] == 'Y':
+            data['GIT'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['CVS'] == 'Y':
+            data['CVS'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['MAVEN'] == 'Y':
+            data['MAVEN'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+        if row['Common'] == 'Y':
+            data['Common'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
 
-        # Continue with installation...
+with open(json_file, 'w') as file:
+    json.dump(data, file, indent=4)
