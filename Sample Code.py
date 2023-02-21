@@ -1,32 +1,59 @@
-import csv
+import os
 import json
+import logging
 
-csv_file = 'data.csv'
 json_file = 'data.json'
 
-data = {'IIB10': [], 'EAI': [], 'ETL': [], 'ACE12': [], 'DS': [], 'GIT': [], 'CVS': [], 'MAVEN': [], 'Common': []}
+with open(json_file, 'r') as file:
+    data = json.load(file)
 
-with open(csv_file, 'r') as file:
-    reader = csv.DictReader(file)
-    for row in reader:
-        if row['IIB10'] == 'Y':
-            data['IIB10'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['EAI'] == 'Y':
-            data['EAI'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['ETL'] == 'Y':
-            data['ETL'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['ACE12'] == 'Y':
-            data['ACE12'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['DS'] == 'Y':
-            data['DS'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['GIT'] == 'Y':
-            data['GIT'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['CVS'] == 'Y':
-            data['CVS'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['MAVEN'] == 'Y':
-            data['MAVEN'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
-        if row['Common'] == 'Y':
-            data['Common'].append({'Name': row['Name'], 'Value': row['Value'], 'Type': row['Type'], 'Path': row['Path']})
+class Constants:
+    def __init__(self, env_type):
+        if env_type in ['IIB10', 'ACE12', 'EAI', 'ETL', 'DS', 'GIT', 'CVS', 'MAVEN', 'Common']:
+            self.env_type = env_type
+            for item in data[env_type]:
+                if item['Type'] == 'E':
+                    try:
+                        if os.path.isabs(item['Value']):
+                            if os.path.isdir(item['Value']) or os.path.isfile(item['Value']):
+                                os.environ[item['Name']] = item['Value']
+                                setattr(self, item['Name'], item['Value'])
+                                if item['Path'] == 'Y':
+                                    os.environ['PATH'] += os.pathsep + item['Value']
+                            else:
+                                raise ValueError(f"{item['Value']} is not a valid directory or file path.")
+                        else:
+                            os.environ[item['Name']] = item['Value']
+                            setattr(self, item['Name'], item['Value'])
+                    except Exception as e:
+                        logging.error(str(e))
+                elif item['Type'] == 'I':
+                    try:
+                        if os.path.isabs(item['Value']):
+                            if os.path.isdir(item['Value']) or os.path.isfile(item['Value']):
+                                setattr(self, item['Name'], item['Value'])
+                                if item['Path'] == 'Y':
+                                    os.environ['PATH'] += os.pathsep + item['Value']
+                            else:
+                                raise ValueError(f"{item['Value']} is not a valid directory or file path.")
+                        else:
+                            setattr(self, item['Name'], item['Value'])
+                    except Exception as e:
+                        logging.error(str(e))
+        else:
+            raise ValueError(f"{env_type} is not a valid environment type.")
 
-with open(json_file, 'w') as file:
-    json.dump(data, file, indent=4)
+
+from Constants import Constants
+import logging
+
+logging.basicConfig(filename='constants.log', level=logging.ERROR, format='%(asctime)s %(levelname)s %(message)s')
+
+try:
+    constants = Constants('IIB10')
+    print(constants.BROKER_URL)
+    print(constants.MQ_HOST)
+    print(constants.MQ_PORT)
+except Exception as e:
+    logging.error(str(e))
+    print(str(e))
