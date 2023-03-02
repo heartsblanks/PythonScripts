@@ -1,65 +1,157 @@
-import os
-import tkinter as tk
-from tkinter import messagebox
+import win32com.client
+from tkinter import *
+
+# Define a function to handle the email sending
+def send_email():
+    try:
+        # Create the Outlook application object
+        outlook = win32com.client.Dispatch('Outlook.Application')
+
+        # Get the recipient, CC, and BCC addresses from the input fields
+        to_address = to_entry.get()
+        cc_address = cc_entry.get()
+        bcc_address = bcc_entry.get()
+
+        # Create a new mail item and set the recipients and subject
+        mail = outlook.CreateItem(0)
+        mail.To = to_address
+        mail.CC = cc_address
+        mail.BCC = bcc_address
+        mail.Subject = 'Update'
+
+        # Define the mail body window using tkinter
+        mail_window = Tk()
+        mail_window.title("Mail Body")
+
+        # Define the mail body input fields using tkinter
+        project_label = Label(mail_window, text="Project Name:")
+        project_label.pack()
+        project_entry = Entry(mail_window, width=30)
+        project_entry.pack()
+        description_label = Label(mail_window, text="Progress Description:")
+        description_label.pack()
+        description_entry = Entry(mail_window, width=30)
+        description_entry.pack()
+        next_steps_label = Label(mail_window, text="Next Steps:")
+        next_steps_label.pack()
+        next_steps_entry = Entry(mail_window, width=30)
+        next_steps_entry.pack()
+        blockers_label = Label(mail_window, text="Blockers:")
+        blockers_label.pack()
+        blockers_entry = Entry(mail_window, width=30)
+        blockers_entry.pack()
+        time_label = Label(mail_window, text="Time to UAT:")
+        time_label.pack()
+        time_entry = Entry(mail_window, width=30)
+        time_entry.pack()
+
+        # Define a function to handle the "Done" button
+        def done():
+            # Get the data from the input fields
+            project_name = project_entry.get()
+            progress_description = description_entry.get()
+            next_steps = next_steps_entry.get()
+            blockers = blockers_entry.get()
+            time_to_uat = time_entry.get()
+
+            # Create a formatted string for the data and add it to the mail body
+            data_str = f"Project Name: {project_name}\nProgress Description: {progress_description}\nNext Steps: {next_steps}\nBlockers: {blockers}\nTime to UAT: {time_to_uat}\n\n"
+            mail.Body += data_str
+
+            # Clear the input fields and destroy the mail window
+            project_entry.delete(0, END)
+            description_entry.delete(0, END)
+            next_steps_entry.delete(0, END)
+            blockers_entry.delete(0, END)
+            time_entry.delete(0, END)
+            mail_window.destroy()
+
+            # Send the email
+            mail.Send()
+
+        # Define the "Done" button using tkinter
+        done_button = Button(mail_window, text="Done", command=done)
+        done_button.pack()
+
+        # Run the main loop to display the mail window
+        mail_window.mainloop()
+
+    except Exception as e:
+        # Handle any errors that occur during email sending
+        print(f"An error occurred: {e}")
+        mail_window.destroy()
+
+# Define the main window using tkinter
+main_window = Tk()
+main_window.title("Send Email")
+
+# Define the recipient input fields using tkinter
+to_label = Label(main_window, text="To:")
+to_label.pack()
+to_entry = Entry(main_window, width=30)
+to_entry.pack()
+cc_label = Label(main_window, text="CC:")
+cc_label.pack()
+cc_entry = Entry(main_window, width=30)
+cc_entry.pack()
+bcc_label = Label(main_window, text="BCC:")
+bcc_label.pack()
+bcc_entry = Entry(main_window, width=30)
+bcc_entry.pack()
+
+mail_body_button = Button(main_window, text="Mail Body", command=send_email)
+mail_body_button.pack()
+main_window.mainloop()
 
 
-class WorkspaceUtils:
-    def __init__(self, install_type):
-        self.install_type = install_type
-        self.workspace_path = None
 
-    def checkWorkspaceDirectory(self):
-        version_file_path = f"C:/Workspaces/{self.install_type}/.metadata/version.ini"
-        if not os.path.exists(version_file_path):
-            self.workspace_options_window = tk.Toplevel()
-            self.workspace_options_window.title(f"{self.install_type} Workspace")
+def done():
+    # Get the data from the input fields
+    project_name = project_entry.get()
+    progress_description = description_entry.get()
+    next_steps = next_steps_entry.get()
+    blockers = blockers_entry.get()
+    time_to_uat = time_entry.get()
 
-            # Create label
-            label = tk.Label(self.workspace_options_window, text="Workspace has not been detected. Do you want to create a new workspace within the standard directory?")
-            label.pack(pady=5)
+    # Create a formatted string for the data and add it to the mail body
+    data_str = f"Project Name: {project_name}\nProgress Description: {progress_description}\nNext Steps: {next_steps}\nBlockers: {blockers}\nTime to UAT: {time_to_uat}\n\n"
+    mail.Body += data_str
 
-            # Create yes button
-            yes_button = tk.Button(self.workspace_options_window, text="Yes", command=lambda: self.createNewWorkspace())
-            yes_button.pack(pady=10)
+    # Clear the input fields and destroy the mail window
+    project_entry.delete(0, END)
+    description_entry.delete(0, END)
+    next_steps_entry.delete(0, END)
+    blockers_entry.delete(0, END)
+    time_entry.delete(0, END)
+    mail_window.destroy()
 
-            # Create no button
-            no_button = tk.Button(self.workspace_options_window, text="No", command=lambda: self.getCustomWorkspace())
-            no_button.pack(pady=10)
+    # Create a new tkinter window to display the email details
+    details_window = Tk()
+    details_window.title("Email Details")
 
-    def createNewWorkspace(self):
-        workspace_path = f"C:/Workspaces/{self.install_type}"
-        os.makedirs(workspace_path, exist_ok=True)
-        version_file_path = f"{workspace_path}/.metadata/version.ini"
-        if not os.path.exists(version_file_path):
-            messagebox.showerror("Error", f"Failed to create new workspace for {self.install_type}")
-            return
+    # Define Label widgets to display the email details
+    project_label = Label(details_window, text=f"Project Name: {project_name}")
+    project_label.pack()
+    description_label = Label(details_window, text=f"Progress Description: {progress_description}")
+    description_label.pack()
+    next_steps_label = Label(details_window, text=f"Next Steps: {next_steps}")
+    next_steps_label.pack()
+    blockers_label = Label(details_window, text=f"Blockers: {blockers}")
+    blockers_label.pack()
+    time_label = Label(details_window, text=f"Time to UAT: {time_to_uat}")
+    time_label.pack()
 
-        self.workspace_options_window.destroy()
-        self.workspace_path = workspace_path
+    # Define a function to send the email
+    def send_email():
+        mail.Send()
+        details_window.destroy()
 
-    def getCustomWorkspace(self):
-        # Create new top level window
-        custom_workspace_window = tk.Toplevel()
-        custom_workspace_window.title("Custom Workspace Location")
+    # Define a "Send" button to send the email
+    send_button = Button(details_window, text="Send", command=send_email)
+    send_button.pack()
 
-        # Create label and entry
-        label = tk.Label(custom_workspace_window, text=f"Enter the location of the {self.install_type} workspace:")
-        label.pack(pady=5)
-        entry = tk.Entry(custom_workspace_window)
-        entry.pack()
+    # Run the main loop to display the details window
+    details_window.mainloop()
 
-        # Create submit button
-        submit_button = tk.Button(custom_workspace_window, text="Submit", command=lambda: self.checkCustomWorkspace(custom_workspace_window, entry.get()))
-        submit_button.pack(pady=10)
 
-        # Create quit button
-        quit_button = tk.Button(custom_workspace_window, text="Quit", command=custom_workspace_window.destroy)
-        quit_button.pack(pady=10)
-
-    def checkCustomWorkspace(self, custom_workspace_window, workspace_path):
-        if os.path.exists(os.path.join(workspace_path, self.install_type, ".metadata", "version.ini")):
-            self.workspace_path = workspace_path
-            custom_workspace_window.destroy()
-        else:
-            messagebox.showerror("Error", f"{self.install_type} workspace not found at the provided location.")
 
