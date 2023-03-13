@@ -92,3 +92,33 @@ def getFieldType(element):
             return "xs:float"
         elif element.getType() == "double":
             return "xs:double
+                elif element.getType() == "boolean":
+            return "xs:boolean"
+        elif element.getType() == "byte":
+            return "xs:byte"
+        elif element.getType() == "short":
+            return "xs:short"
+        elif element.getType() == "long":
+            return "xs:long"
+        elif element.getType() == "dateTime":
+            return "xs:dateTime"
+        elif element.getType() == "time":
+            return "xs:time"
+        elif element.getType() == "date":
+            return "xs:date"
+        elif element.getType() == "duration":
+            return "xs:duration"
+        elif element.getType() == "hexBinary":
+            return "xs:hexBinary"
+        elif element.getType() == "base64Binary":
+            return "xs:base64Binary"
+        elif element.getType() == "anyURI":
+            return "xs:anyURI"
+        elif element.getType() == "string":
+            if element.getMaxLength() > 0:
+                return "xs:string({})".format(element.getMaxLength())
+            else:
+                return "xs:string"
+    elif isinstance(element, EnumerationType):
+        return "xs:string"
+
