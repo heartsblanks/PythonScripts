@@ -1,35 +1,28 @@
-import subprocess
+import re
+from lxml import etree
 
-# Define the command to execute
-ssh_app = '/path/to/ssh/app'
-deploy_login = 'user@host'
-user_password = 'password'
-command = f'echo {user_password} | sudodeploy -encrypt 2>/dev/null | tail -n1'
+# Open the XML file and read it into a string
+with open('original_file.xml', 'rb') as file:
+    xml_string = file.read().decode('utf-8', 'ignore')
 
-# Execute the command and capture its output
-output = subprocess.run([ssh_app, deploy_login, '-batch', command], capture_output=True, text=True).stdout.strip()
+# Remove invalid characters from the XML string using a regular expression
+regex = re.compile('[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD]')
+xml_string = regex.sub('', xml_string)
 
-# Parse the output to extract the encrypted password
-encrypted = output.split('=')[1].strip()
+# Parse the formatted XML string using lxml
+try:
+    root = etree.fromstring(xml_string)
+except etree.XMLSyntaxError as e:
+    print(f'Error parsing XML: {e}')
+    exit()
 
-# Set the encrypted password as an environment variable
-import os
-os.environ['ENCRYPTED'] = encrypted
+# Format the parsed tree to a string
+pretty_xml = etree.tostring(root, encoding='unicode', pretty_print=True, xml_declaration=True, encoding='UTF-8', doctype='<!DOCTYPE doc>', standalone=True)
 
-import subprocess
-
-# Define the PLINK command to execute
-plink_path = 'C:/path/to/plink.exe'
-putty_private_key = 'C:/path/to/putty-private-key.ppk'
-plink_command = f'{plink_path} -no-antispoof -i {putty_private_key} user@host command-to-execute'
-
-# Execute the command and capture its output
-output = subprocess.run(plink_command, capture_output=True, text=True).stdout.strip()
-
-# Print the output
-print(output)
-
-command = f'{PLINK_PATH} -no-antispoof -i {PUTTY_PRIVATE_KEY} user@host "echo {USER_PASSWORD} | sudodeploy -encrypt 2>/dev/null | tail -n1"'
-
-
-
+# Write the formatted XML string to a new file
+try:
+    with open('formatted_file.xml', 'w') as file:
+        file.write(pretty_xml)
+except OSError as e:
+    print(f'Error writing formatted XML file: {e}')
+    exit()
