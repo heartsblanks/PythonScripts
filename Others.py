@@ -1,23 +1,22 @@
-import re
 from lxml import etree
 
-# Open the XML file and read it into a string
-with open('original_file.xml', 'rb') as file:
-    xml_string = file.read().decode('utf-8', 'ignore')
+# Read the XML file into memory and remove newlines
+try:
+    with open('original_file.xml', 'r') as file:
+        xml_string = file.read().replace('\n', '')
+except OSError as e:
+    print(f'Error reading XML file: {e}')
+    exit()
 
-# Remove invalid characters from the XML string using a regular expression
-regex = re.compile('[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD]')
-xml_string = regex.sub('', xml_string)
-
-# Parse the formatted XML string using lxml
+# Parse the cleaned XML string using lxml
 try:
     root = etree.fromstring(xml_string)
 except etree.XMLSyntaxError as e:
-    print(f'Error parsing XML: {e}')
+    print(f'Error parsing XML file: {e}')
     exit()
 
-# Format the parsed tree to a string
-pretty_xml = etree.tostring(root, encoding='unicode', pretty_print=True, xml_declaration=True, encoding='UTF-8', doctype='<!DOCTYPE doc>', standalone=True)
+# Pretty-print the parsed tree to a string with customized formatting options
+pretty_xml = etree.tostring(root, encoding='unicode', pretty_print=True, xml_declaration=True, doctype='<!DOCTYPE doc>', standalone=True)
 
 # Write the formatted XML string to a new file
 try:
