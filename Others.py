@@ -4,42 +4,59 @@ import os
 import chardet
 import multiprocessing
 
-def browse_directory():
-    """Open a file dialog to allow the user to select a directory."""
-    global directory_path
-    directory_path = tk.filedialog.askdirectory()
+class FileSearch:
+    def __init__(self, window):
+        self.window = window
+        self.window.title("File Search")
 
-def search_files():
-    """Search for files that contain the specified search text."""
-    global search_text, directory_path
-    # Get the search text from the entry widget
-    search_text = search_text_entry.get()
-    # Search for files in the selected directory
-    matching_files = []
-    # Create a pool of processes to search the directories in parallel
-    pool = multiprocessing.Pool()
-    for root, dirs, files in os.walk(directory_path):
-        for file in files:
-            # Check if the search text is in the file name
-            if search_text.lower() in file.lower():
-                matching_files.append(os.path.join(root, file))
-            else:
-                # Check if the file contains the search text
-                if file.endswith(('.txt', '.pdf', '.doc', '.docx', '.ppt', '.pptx')):
-                    file_path = os.path.join(root, file)
-                    # Search the file in a separate process
-                    result = pool.apply_async(search_file, args=(file_path, search_text))
-                    # Add the file path to the matching files list if it contains the search text
-                    if result.get():
-                        matching_files.append(file_path)
-    # Close the process pool
-    pool.close()
-    pool.join()
-    # Display the matching files in a message box
-    if matching_files:
-        tk.messagebox.showinfo("Search Results", "The following files contain the search text:\n\n" + "\n".join(matching_files))
-    else:
-        tk.messagebox.showinfo("Search Results", "No files were found containing the search text.")
+        # Create a label and entry widget for the search text
+        search_text_label = tk.Label(window, text="Search Text:")
+        search_text_label.pack()
+        self.search_text_entry = tk.Entry(window)
+        self.search_text_entry.pack()
+
+        # Create a button to allow the user to select a directory
+        browse_button = tk.Button(window, text="Select Directory", command=self.browse_directory)
+        browse_button.pack()
+
+        # Create a button to start the search
+        search_button = tk.Button(window, text="Search", command=self.search_files)
+        search_button.pack()
+
+    def browse_directory(self):
+        """Open a file dialog to allow the user to select a directory."""
+        self.directory_path = tk.filedialog.askdirectory()
+
+    def search_files(self):
+        """Search for files that contain the specified search text."""
+        # Get the search text from the entry widget
+        search_text = self.search_text_entry.get()
+        # Search for files in the selected directory
+        matching_files = []
+        # Create a pool of processes to search the directories in parallel
+        pool = multiprocessing.Pool()
+        for root, dirs, files in os.walk(self.directory_path):
+            for file in files:
+                # Check if the search text is in the file name
+                if search_text.lower() in file.lower():
+                    matching_files.append(os.path.join(root, file))
+                else:
+                    # Check if the file contains the search text
+                    if file.endswith(('.txt', '.pdf', '.doc', '.docx', '.ppt', '.pptx')):
+                        file_path = os.path.join(root, file)
+                        # Search the file in a separate process
+                        result = pool.apply_async(search_file, args=(file_path, search_text))
+                        # Add the file path to the matching files list if it contains the search text
+                        if result.get():
+                            matching_files.append(file_path)
+        # Close the process pool
+        pool.close()
+        pool.join()
+        # Display the matching files in a message box
+        if matching_files:
+            tk.messagebox.showinfo("Search Results", "The following files contain the search text:\n\n" + "\n".join(matching_files))
+        else:
+            tk.messagebox.showinfo("Search Results", "No files were found containing the search text.")
 
 def search_file(file_path, search_text):
     """Search for the specified text in a file."""
@@ -52,34 +69,26 @@ def search_file(file_path, search_text):
             # If encoding is None, try a list of common encodings
             encodings = ['utf-8', 'iso-8859-1', 'cp1252', 'utf-16', 'utf-32']
             for e in encodings:
-                try:
-                    text = raw_data.decode(e)
-                    break
-                except UnicodeDecodeError:
-                    continue
-        else:
-            # Decode the file
-            text = raw_data.decode(encoding)
-        # Check if the search text is in the file
-        return search_text.lower() in text.lower()
+            try:
+                text = raw_data.decode(encoding=e)
+                if search_text in text:
+                    return True
+            except UnicodeDecodeError:
+                pass
+    else:
+        # If encoding is detected, decode the file using that encoding
+        text = raw_data.decode(encoding=encoding)
+        if search_text in text:
+            return True
+return False
+Create the main window
 
-# Create the main window
 window = tk.Tk()
-window.title("File Search")
 
-# Create a label and entry widget for the search text
-search_text_label = tk.Label(window, text="Search Text:")
-search_text_label.pack()
-search_text_entry = tk.Entry(window)
-search_text_entry.pack()
+Create an instance of the FileSearch class
 
-# Create a button to allow the user to select a directory
-browse_button = tk.Button(window, text="Select Directory", command=browse_directory)
-browse_button.pack()
+file_search = FileSearch(window)
 
-# Create a button to start the search
-search_button = tk.Button(window, text="Search", command=search_files)
-search_button.pack()
+Run the main event loop
 
-# Start the main event loop
 window.mainloop()
