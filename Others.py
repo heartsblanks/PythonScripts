@@ -29,12 +29,16 @@ class FileSearch:
         """Open a file dialog to allow the user to select a directory."""
         self.directory_path = tk.filedialog.askdirectory()
 
-    def search_files(self):
-        """Search for files that contain the specified search text."""
-        # Get the search text from the entry widget
-        search_text = self.search_text_entry.get()
-        # Search for files in the selected directory
-        matching_files = []
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def search_files(self):
+    """Search for files that contain the specified search text."""
+    # Get the search text from the entry widget
+    search_text = self.search_text_entry.get()
+    # Search for files in the selected directory
+    matching_files = []
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = []
         for root, dirs, files in os.walk(self.directory_path):
             for file in files:
                 # Check if the search text is in the file name
@@ -44,17 +48,20 @@ class FileSearch:
                     # Check if the file contains the search text
                     if file.endswith(('.txt', '.pdf', '.doc', '.docx', '.ppt', '.pptx')):
                         file_path = os.path.join(root, file)
-                        # Search the file in a separate thread
-                        future = self.executor.submit(search_file, file_path, search_text)
-                        # Add the file path to the matching files list if it contains the search text
-                        if future.result():
-                            matching_files.append(file_path)
+                        # Submit the file to the thread pool for searching
+                        future = executor.submit(search_file, file_path, search_text)
+                        futures.append(future)
+        for future in as_completed(futures):
+            # Get the result of the search and add the file path to the matching files list if it contains the search text
+            result, file_path = future.result()
+            if result:
+                matching_files.append(file_path)
 
-        # Display the matching files in a message box
-        if matching_files:
-            tk.messagebox.showinfo("Search Results", "The following files contain the search text:\n\n" + "\n".join(matching_files))
-        else:
-            tk.messagebox.showinfo("Search Results", "No files were found containing the search text.")
+    # Display the matching files in a message box
+    if matching_files:
+        tk.messagebox.showinfo("Search Results", "The following files contain the search text:\n\n" + "\n".join(matching_files))
+    else:
+        tk.messagebox.showinfo("Search Results", "No files were found containing the search text.")
 
 def search_file(file_path, search_text):
     """Search for the specified text in a file."""
