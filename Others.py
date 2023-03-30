@@ -1,24 +1,40 @@
-mqsireportproperties <brokername> -o HTTPConnector -b httplistener -a | awk -F "=" '/^[[:space:]]*port/ {gsub(/"/, "", $2); gsub(/^ */, "", $2); print $2+0}'
 import paramiko
+import select
 
-# Connect to the remote server using SSH
+# create SSH client
 ssh_client = paramiko.SSHClient()
 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh_client.connect('remote_host', username='remote_user', password='password')
 
-# Execute the command and read the output
-command = 'mqsireportproperties <brokername> -o HTTPConnector -b httplistener -a | awk -F "=" \'/^[[:space:]]*port/ {{gsub(/"/, "", $2); gsub(/^ */, "", $2); print $2}}\''
-ssh_stdin, ssh_stdout, ssh_stderr = ssh_client.exec_command('bash -l -c "{}"'.format(command), get_pty=True)
+# connect to remote host
+ssh_client.connect(hostname='your_host', username='your_username', password='your_password')
 
-# Clear any existing data in the channel buffer
-while ssh_stdout.channel.recv_ready():
-    ssh_stdout.channel.recv(1024)
+# open SSH channel
+ssh_channel = ssh_client.invoke_shell()
 
-# Read the output from the command
-output = ssh_stdout.read().decode().strip()
+# consume any data before executing mqsireportproperties
+while ssh_channel.recv_ready():
+    ssh_channel.recv(1024)
 
-# Print the output
-print(output)
+# execute mqsireportproperties command
+command = 'mqsireportproperties <brokername> -o HTTPConnector -b httplistener -a | awk -F "[= ]" "/port/{print $4}"'
+ssh_channel.send(command + '\n')
 
-# Close the SSH connection
+# wait until there is data to read
+while not ssh_channel.recv_ready():
+    select.select([ssh_channel], [], [], 1)
+
+# consume any data before the mqsireportproperties output
+while ssh_channel.recv_ready():
+    ssh_channel.recv(1024)
+
+# read the mqsireportproperties output
+output = ''
+while ssh_channel.recv_ready():
+    output += ssh_channel.recv(1024).decode('utf-8')
+
+# print the output
+print(output.strip())
+
+# close SSH channel and client
+ssh_channel.close()
 ssh_client.close()
