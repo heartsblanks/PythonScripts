@@ -1,4 +1,4 @@
-mqsireportproperties <brokername> -o HTTPConnector -b httplistener -a | awk -F "=" '/^[[:space:]]*port/ {gsub(/"/, "", $2); gsub(/^ */, "", $2); print $2}'
+mqsireportproperties <brokername> -o HTTPConnector -b httplistener -a | awk -F "=" '/^[[:space:]]*port/ {gsub(/"/, "", $2); gsub(/^ */, "", $2); print $2+0}'
 import paramiko
 
 # Connect to the remote server using SSH
