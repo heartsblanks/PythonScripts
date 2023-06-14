@@ -1,16 +1,44 @@
-import os
-import subprocess
+import re
 
-# Define the path to the IIB toolkit installation
-iib_toolkit_path = "/path/to/IIBToolkit"
+# Specify the input file name
+input_file = 'input_file.txt'
 
-# Define the path to the Git plugin archive
-git_plugin_path = "/path/to/git-plugin.tar.gz"
+# Open the input file for reading
+with open(input_file, 'r') as file:
+    content = file.readlines()
 
-# Define the command to install the Git plugin
-install_cmd = "{}eclipsec -application org.eclipse.equinox.p2.director \
-  -repository jar:file:{}/tools/plugins/{}!/ \
-  -installIU com.ibm.etools.git.feature.feature.group".format(iib_toolkit_path, iib_toolkit_path, git_plugin_path)
+# Initialize variables
+label_value = ''
+message_flow_content = ''
+output_file = ''
 
-# Run the command to install the Git plugin
-subprocess.call(install_cmd, shell=True)
+# Process the lines
+for line in content:
+    if line.startswith('MessageFlow'):
+        # Check for the line starting with 'MessageFlow'
+        if message_flow_content:
+            # If previous content exists, write it to the output file
+            if output_file and message_flow_content.strip():
+                with open(output_file, 'w') as file:
+                    file.write(message_flow_content.strip())
+                    print(f"Created file: {output_file}")
+            message_flow_content = ''  # Reset the content
+        label_match = re.search(r'label\s*=\s*\'([^\']+)\'', line)
+        if label_match:
+            # Extract the label value
+            label_value = label_match.group(1)
+            output_file = label_value.split('.')[-1] + '.txt'
+    message_flow_content += line
+    if label_value and line.startswith('MessageFlow') and line.strip() != 'MessageFlow':
+        # Check for the next line starting with 'MessageFlow' (excluding 'MessageFlow' line itself)
+        if output_file and message_flow_content.strip():
+            with open(output_file, 'w') as file:
+                file.write(message_flow_content.strip())
+                print(f"Created file: {output_file}")
+        message_flow_content = line  # Start new content from the next 'MessageFlow' line
+
+# Write the final message flow content to the output file
+if output_file and message_flow_content.strip():
+    with open(output_file, 'w') as file:
+        file.write(message_flow_content.strip())
+        print(f"Created file: {output_file}")
