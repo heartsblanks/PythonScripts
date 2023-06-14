@@ -16,7 +16,6 @@ message_flow_content = ''
 # Process the lines
 for line in content:
     if line.startswith('MessageFlow'):
-        # Check for the line starting with 'MessageFlow'
         if writing_content:
             # If previous content exists, store it in the appropriate output file
             if label_value in output_files and message_flow_content.strip():
@@ -32,8 +31,11 @@ for line in content:
                 output_file = label_value.split('.')[-1] + '.txt'
                 output_files[label_value] = open(output_file, 'w')
             writing_content = True  # Start writing content
+        else:
+            writing_content = False  # Stop writing content
 
-    message_flow_content += line
+    if writing_content:
+        message_flow_content += line
 
 # Write the final message flow content to the output file
 if label_value in output_files and message_flow_content.strip():
