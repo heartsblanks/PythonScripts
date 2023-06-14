@@ -8,14 +8,16 @@ with open(input_file, 'r') as file:
     content = file.readlines()
 
 # Initialize variables
-message_flow_content = ''
 output_files = {}
+label_value = None  # Initialize label_value
+writing_content = False
+message_flow_content = ''
 
 # Process the lines
 for line in content:
     if line.startswith('MessageFlow'):
         # Check for the line starting with 'MessageFlow'
-        if message_flow_content:
+        if writing_content:
             # If previous content exists, store it in the appropriate output file
             if label_value in output_files and message_flow_content.strip():
                 output_files[label_value].write(message_flow_content.strip() + '\n')
@@ -29,6 +31,7 @@ for line in content:
                 # Create a new output file for the label value
                 output_file = label_value.split('.')[-1] + '.txt'
                 output_files[label_value] = open(output_file, 'w')
+            writing_content = True  # Start writing content
 
     message_flow_content += line
 
