@@ -23,8 +23,8 @@ for line in content:
                 output_files[label_value].write(message_flow_content.strip() + '\n')
             message_flow_content = ''  # Reset the content
 
-        # Extract the label value
-        label_match = re.search(r"label='([^']+)'", line)
+        # Extract the label value using a modified regular expression pattern
+        label_match = re.search(r"\s+label\s*=\s*['\"]([^'\"]+)['\"]", line)
         if label_match:
             label_value = label_match.group(1)
             if label_value not in output_files:
