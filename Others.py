@@ -32,13 +32,12 @@ for line in content:
     if label_value and line.startswith('MessageFlow') and line.strip() != 'MessageFlow':
         # Check for the next line starting with 'MessageFlow' (excluding 'MessageFlow' line itself)
         if output_file and message_flow_content.strip():
-            with open(output_file, 'w') as file:
-                file.write(message_flow_content.strip())
-                print(f"Created file: {output_file}")
+            with open(output_file, 'a') as file:
+                file.write(message_flow_content)
         message_flow_content = line  # Start new content from the next 'MessageFlow' line
 
 # Write the final message flow content to the output file
 if output_file and message_flow_content.strip():
-    with open(output_file, 'w') as file:
-        file.write(message_flow_content.strip())
+    with open(output_file, 'a') as file:
+        file.write(message_flow_content)
         print(f"Created file: {output_file}")
