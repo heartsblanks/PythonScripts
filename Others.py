@@ -1,48 +1,46 @@
-import re
+import tkinter as tk
+from tkinter import ttk
 
-# Specify the input file name
-input_file = 'input_file.txt'
 
-# Open the input file for reading
-with open(input_file, 'r') as file:
-    content = file.readlines()
+class Application:
+    def __init__(self, master):
+        self.master = master
 
-# Initialize variables
-output_files = {}
-label_value = None  # Initialize label_value
-writing_content = False
-message_flow_content = ''
+        self.treeview = ttk.Treeview(self.master, columns=("Flow"), show="tree")
+        self.treeview.pack()
 
-# Process the lines
-for line in content:
-    if line.startswith('MessageFlow'):
-        if writing_content:
-            # If previous content exists, store it in the appropriate output file
-            if label_value in output_files and message_flow_content.strip():
-                output_files[label_value].write(message_flow_content.strip() + '\n')
-            message_flow_content = ''  # Reset the content
+        self.data = [
+            ("123", "1023"),
+            ("123", "1123"),
+            ("435", "4035"),
+            ("435", "4135"),
+            ("780", "7080"),
+        ]
 
-        # Extract the label value using a modified regular expression pattern
-        label_match = re.search(r"\s+label\s*=\s*['\"]([^'\"]+)['\"]", line)
-        if label_match:
-            label_value = label_match.group(1)
-            if label_value not in output_files:
-                # Create a new output file for the label value
-                output_file = label_value.split('.')[-1] + '.txt'
-                output_files[label_value] = open(output_file, 'w')
-            writing_content = True  # Start writing content
-        else:
-            writing_content = False  # Stop writing content
+        self.populate_treeview()
 
-    if writing_content:
-        message_flow_content += line
+    def populate_treeview(self):
+        unique_ids = list(set(item[0] for item in self.data))
+        unique_ids.sort()
 
-# Write the final message flow content to the output file
-if label_value in output_files and message_flow_content.strip():
-    output_files[label_value].write(message_flow_content.strip() + '\n')
+        for unique_id in unique_ids:
+            group_name = f"{unique_id}XXX"  # Group name is ID followed by 3 X's
+            group_node = self.treeview.insert("", "end", text=group_name, open=True)
 
-# Close all output files
-for file in output_files.values():
-    file.close()
+            for item in self.data:
+                if item[0] == unique_id:
+                    self.treeview.insert(group_node, "end", text=item[1], values=(item[1]))
 
-print("Output files created successfully.")
+    def toggle_checkbox(self, event):
+        item_id = self.treeview.identify_row(event.y)
+        if item_id:
+            tags = self.treeview.item(item_id, "tags")
+            if "item" in tags:
+                current_value = self.treeview.item(item_id, "text")
+                new_value = f"[x] {current_value}" if "[x]" not in current_value else current_value.replace("[x]", "")
+                self.treeview.item(item_id, text=new_value)
+
+
+root = tk.Tk()
+app = Application(root)
+root.mainloop()
