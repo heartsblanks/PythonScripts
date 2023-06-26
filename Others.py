@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import pandas as pd
+import os
 
 # Assuming you have a DataFrame called 'df' with columns 'ID' and 'Flow'
 grouped_df = df.groupby('ID')
@@ -14,6 +15,21 @@ tree = ttk.Treeview(window, columns=('Flow'))
 
 # Create a dictionary to store the group nodes by the first character
 group_nodes = {}
+
+# Get the directory path where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Define the image paths based on the directory path
+checked_image_path = os.path.join(script_dir, 'Files', 'checkbox_checked.png')
+unchecked_image_path = os.path.join(script_dir, 'Files', 'checkbox_unchecked.png')
+
+# Load the checkbox images
+checked_image = tk.PhotoImage(file=checked_image_path)
+unchecked_image = tk.PhotoImage(file=unchecked_image_path)
+
+# Configure the TreeView to show checkboxes
+tree.tag_configure('checked', image=checked_image)
+tree.tag_configure('unchecked', image=unchecked_image)
 
 # Create a custom checkbutton widget
 def toggle_check():
@@ -37,15 +53,6 @@ def handle_click(event):
             return 'break'
 
 tree.bind('<Button-1>', handle_click)
-
-# Configure the TreeView to show checkboxes
-tree.tag_configure('checked', image='checkbox_checked.png')
-tree.tag_configure('unchecked', image='checkbox_unchecked.png')
-tree.tag_bind('checked', '<Button-1>', toggle_check)
-tree.tag_bind('unchecked', '<Button-1>', toggle_check)
-
-# Set initial checkbox state
-tree.tag_configure('group', image='checkbox_unchecked.png')
 
 # Insert groups and flows into the TreeView
 for group_id, group_data in grouped_df:
