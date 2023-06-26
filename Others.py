@@ -26,12 +26,20 @@ def update_checkbutton(item_id):
     tree.item(item_id, text='', values=(is_checked,))
 
 def handle_click(event):
-    item_id = tree.identify_row(event.y)
-    column = tree.identify_column(event.x)
+    item_id = tree.focus()
+    region = tree.identify_region(event.x, event.y)
 
-    if column == '#0' and 'XXX' in tree.item(item_id, 'text'):
-        toggle_check(item_id)
+    if region == 'button':
+        # Toggle the expand/collapse state of the item
+        tree.item(item_id, open=not tree.item(item_id, 'open'))
         return 'break'
+
+    if region == 'cell':
+        column = tree.identify_column(event.x)
+
+        if column == '#0' and 'XXX' in tree.item(item_id, 'text'):
+            toggle_check()
+            return 'break'
 
 tree.bind('<Button-1>', handle_click)
 
