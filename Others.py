@@ -16,7 +16,8 @@ tree = ttk.Treeview(window, columns=('Flow'), show='tree')
 group_nodes = {}
 
 # Create a custom checkbutton widget
-def toggle_check(item_id):
+def toggle_check(event):
+    item_id = tree.focus()
     current_state = tree.item(item_id, 'value')
 
     if current_state == 'checked':
@@ -32,7 +33,7 @@ def handle_click(event):
         column = tree.identify_column(event.x)
 
         if column == '#0' and 'XXX' in tree.item(item_id, 'text'):
-            toggle_check(item_id)
+            toggle_check(event)
             return 'break'
 
 tree.bind('<Button-1>', handle_click)
@@ -66,7 +67,7 @@ for group_id, group_data in grouped_df:
     # Add a checkbox for the group node
     checkbutton = ttk.Checkbutton(tree)
     tree.item(group_node, image='', values=[checkbutton], tags='checkbutton')
-    checkbutton.bind('<Button-1>', lambda event, node=group_node: toggle_check(node))
+    checkbutton.bind('<Button-1>', toggle_check)
 
 # Set the image for checked and unchecked checkboxes
 checked_image = tk.PhotoImage(file='Files/checkbox_checked.png')
