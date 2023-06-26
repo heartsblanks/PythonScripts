@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 import pandas as pd
-import os
 
 # Assuming you have a DataFrame called 'df' with columns 'ID' and 'Flow'
 grouped_df = df.groupby('ID')
@@ -11,35 +10,19 @@ window = tk.Tk()
 window.title("TreeView Example")
 
 # Create the TreeView widget
-tree = ttk.Treeview(window, columns=('Flow'))
+tree = ttk.Treeview(window, columns=('Flow'), show='tree')
 
 # Create a dictionary to store the group nodes by the first character
 group_nodes = {}
 
-# Get the directory path where the script is located
-script_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Define the image paths based on the directory path
-checked_image_path = os.path.join(script_dir, 'Files', 'checkbox_checked.png')
-unchecked_image_path = os.path.join(script_dir, 'Files', 'checkbox_unchecked.png')
-
-# Load the checkbox images
-checked_image = tk.PhotoImage(file=checked_image_path)
-unchecked_image = tk.PhotoImage(file=unchecked_image_path)
-
-# Configure the TreeView to show checkboxes
-tree.tag_configure('checked', image=checked_image)
-tree.tag_configure('unchecked', image=unchecked_image)
-
 # Create a custom checkbutton widget
-def toggle_check():
-    item_id = tree.focus()
-    current_tags = tree.item(item_id, 'tags')
+def toggle_check(item_id):
+    current_state = tree.item(item_id, 'value')
 
-    if 'checked' in current_tags:
-        tree.item(item_id, tags=('group',))
+    if current_state == 'checked':
+        tree.item(item_id, value='unchecked')
     else:
-        tree.item(item_id, tags=('group', 'checked'))
+        tree.item(item_id, value='checked')
 
 def handle_click(event):
     region = tree.identify_region(event.x, event.y)
@@ -49,10 +32,14 @@ def handle_click(event):
         column = tree.identify_column(event.x)
 
         if column == '#0' and 'XXX' in tree.item(item_id, 'text'):
-            toggle_check()
+            toggle_check(item_id)
             return 'break'
 
 tree.bind('<Button-1>', handle_click)
+
+# Configure the TreeView to show checkboxes
+tree.heading('#0', text='ID')
+tree.column('#0', width=100, anchor='w')
 
 # Insert groups and flows into the TreeView
 for group_id, group_data in grouped_df:
@@ -63,11 +50,11 @@ for group_id, group_data in grouped_df:
     if first_char in group_nodes:
         # If it exists, insert the group node under the corresponding parent node
         parent_node = group_nodes[first_char]
-        group_node = tree.insert(parent_node, 'end', text=f'{group_id}XXX', open=True, tags=('group',))
+        group_node = tree.insert(parent_node, 'end', text=f'{group_id}XXX')
     else:
         # If it doesn't exist, create a new parent node and insert the group node under it
-        parent_node = tree.insert('', 'end', text=first_char, open=True)
-        group_node = tree.insert(parent_node, 'end', text=f'{group_id}XXX', open=True, tags=('group',))
+        parent_node = tree.insert('', 'end', text=first_char)
+        group_node = tree.insert(parent_node, 'end', text=f'{group_id}XXX')
 
         # Store the parent node in the dictionary for future use
         group_nodes[first_char] = parent_node
@@ -75,6 +62,19 @@ for group_id, group_data in grouped_df:
     # Insert flow nodes as children of the group
     for _, row in group_data.iterrows():
         tree.insert(group_node, 'end', text=row['Flow'])
+
+    # Add a checkbox for the group node
+    checkbutton = ttk.Checkbutton(tree)
+    tree.item(group_node, image='', values=[checkbutton], tags='checkbutton')
+    checkbutton.bind('<Button-1>', lambda event, node=group_node: toggle_check(node))
+
+# Set the image for checked and unchecked checkboxes
+checked_image = tk.PhotoImage(file='Files/checkbox_checked.png')
+unchecked_image = tk.PhotoImage(file='Files/checkbox_unchecked.png')
+
+# Configure the TreeView to display the checkbox images
+tree.tag_configure('checkbutton', image=unchecked_image)
+tree.tag_bind('checkbutton', '<Button-1>', toggle_check)
 
 # Pack the TreeView widget
 tree.pack()
