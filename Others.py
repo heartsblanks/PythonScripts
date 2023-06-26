@@ -23,7 +23,7 @@ def toggle_check(item_id):
 
 def update_checkbutton(item_id):
     is_checked = checkbutton_values.get(item_id, False)
-    tree.item(item_id, text=is_checked)
+    tree.item(item_id, text='', values=(is_checked,))
 
 def handle_click(event):
     item_id = tree.identify_row(event.y)
@@ -37,6 +37,7 @@ tree.bind('<Button-1>', handle_click)
 
 # Configure the TreeView to show checkboxes
 tree.heading('#0', text='Checkbox')
+tree.column('#0', width=100, anchor='w')
 
 # Insert groups and flows into the TreeView
 for group_id, group_data in grouped_df:
