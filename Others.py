@@ -12,26 +12,62 @@ window.title("TreeView Example")
 # Create the TreeView widget
 tree = ttk.Treeview(window, columns=('Flow'))
 
-# Custom function to toggle the checkbox state
-def toggle_checkbox(item_id):
-    current_state = tree.item(item_id, 'value')
-    tree.item(item_id, value=not current_state)
+# Create a dictionary to store the group nodes by the first character
+group_nodes = {}
 
-# Create a custom checkbox column
-tree.heading('#0', text='ID', anchor='w')
-tree.column('#0', width=100, anchor='w')
+# Create a custom checkbutton widget
+def toggle_check():
+    item_id = tree.focus()
+    current_tags = tree.item(item_id, 'tags')
+
+    if 'checked' in current_tags:
+        tree.item(item_id, tags=('group',))
+    else:
+        tree.item(item_id, tags=('group', 'checked'))
+
+def handle_click(event):
+    region = tree.identify_region(event.x, event.y)
+
+    if region == 'cell':
+        item_id = tree.identify_row(event.y)
+        column = tree.identify_column(event.x)
+
+        if column == '#0' and 'XXX' in tree.item(item_id, 'text'):
+            toggle_check()
+            return 'break'
+
+tree.bind('<Button-1>', handle_click)
+
+# Configure the TreeView to show checkboxes
+tree.tag_configure('checked', image='checkbox_checked.png')
+tree.tag_configure('unchecked', image='checkbox_unchecked.png')
+tree.tag_bind('checked', '<Button-1>', toggle_check)
+tree.tag_bind('unchecked', '<Button-1>', toggle_check)
+
+# Set initial checkbox state
+tree.tag_configure('group', image='checkbox_unchecked.png')
 
 # Insert groups and flows into the TreeView
 for group_id, group_data in grouped_df:
-    # Insert group node with checkbox
-    group_node = tree.insert('', 'end', text=f'{group_id}XXX', value=False)
+    # Get the first character of the group ID
+    first_char = group_id[0]
+
+    # Check if the first character exists in the dictionary
+    if first_char in group_nodes:
+        # If it exists, insert the group node under the corresponding parent node
+        parent_node = group_nodes[first_char]
+        group_node = tree.insert(parent_node, 'end', text=f'{group_id}XXX', open=True, tags=('group',))
+    else:
+        # If it doesn't exist, create a new parent node and insert the group node under it
+        parent_node = tree.insert('', 'end', text=first_char, open=True)
+        group_node = tree.insert(parent_node, 'end', text=f'{group_id}XXX', open=True, tags=('group',))
+
+        # Store the parent node in the dictionary for future use
+        group_nodes[first_char] = parent_node
 
     # Insert flow nodes as children of the group
     for _, row in group_data.iterrows():
         tree.insert(group_node, 'end', text=row['Flow'])
-
-# Bind the checkbox state toggling function to the TreeView
-tree.bind('<Button-1>', lambda event: toggle_checkbox(tree.focus()))
 
 # Pack the TreeView widget
 tree.pack()
