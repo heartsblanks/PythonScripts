@@ -1,68 +1,40 @@
-import tkinter as tk
-from tkinter import ttk
-import pandas as pd
+import os
+import filecmp
+import shutil
 
-# Assuming you have a DataFrame called 'df' with columns 'ID' and 'Flow'
-grouped_df = df.groupby('ID')
+def compare_and_copy(source_dir, destination_dir):
+    # Get the list of files and directories in the source directory
+    source_entries = os.listdir(source_dir)
 
-# Create the Tkinter window
-window = tk.Tk()
-window.title("TreeView Example")
+    # Iterate through each entry in the source directory
+    for entry in source_entries:
+        source_entry_path = os.path.join(source_dir, entry)
+        destination_entry_path = os.path.join(destination_dir, entry)
 
-# Create the TreeView widget
-tree = ttk.Treeview(window, columns=('Flow'), show='tree')
+        # Check if the entry is a file
+        if os.path.isfile(source_entry_path):
+            # Check if the file exists in the destination directory
+            if not os.path.exists(destination_entry_path):
+                # File does not exist in destination, copy it from source
+                shutil.copy2(source_entry_path, destination_entry_path)
+            else:
+                # File exists in destination, compare contents
+                if not filecmp.cmp(source_entry_path, destination_entry_path, shallow=False):
+                    # Contents differ, update the file in destination with source content
+                    shutil.copy2(source_entry_path, destination_entry_path)
 
-# Create a dictionary to store the checkbutton values by item ID
-checkbutton_values = {}
+        # Check if the entry is a directory
+        elif os.path.isdir(source_entry_path):
+            # Check if the directory exists in the destination directory
+            if not os.path.exists(destination_entry_path):
+                # Directory does not exist in destination, copy it from source
+                shutil.copytree(source_entry_path, destination_entry_path)
+            else:
+                # Directory exists in destination, recursively compare and copy
+                compare_and_copy(source_entry_path, destination_entry_path)
 
-# Create a custom checkbutton widget
-def toggle_check(item_id):
-    current_value = checkbutton_values.get(item_id, False)
-    checkbutton_values[item_id] = not current_value
-    update_checkbutton(item_id)
+# Example usage
+source_directory = 'path/to/source/directory'
+destination_directory = 'path/to/destination/directory'
 
-def update_checkbutton(item_id):
-    is_checked = checkbutton_values.get(item_id, False)
-    tree.item(item_id, text='', values=(is_checked,))
-
-def handle_click(event):
-    item_id = tree.focus()
-    region = tree.identify_region(event.x, event.y)
-
-    if region == 'button':
-        # Toggle the expand/collapse state of the item
-        tree.item(item_id, open=not tree.item(item_id, 'open'))
-        return 'break'
-
-    if region == 'cell':
-        column = tree.identify_column(event.x)
-
-        if column == '#0' and 'XXX' in tree.item(item_id, 'text'):
-            toggle_check()
-            return 'break'
-
-tree.bind('<Button-1>', handle_click)
-
-# Configure the TreeView to show checkboxes
-tree.heading('#0', text='Checkbox')
-tree.column('#0', width=100, anchor='w')
-
-# Insert groups and flows into the TreeView
-for group_id, group_data in grouped_df:
-    # Get the first character of the group ID
-    first_char = group_id[0]
-
-    # Insert group node
-    group_node = tree.insert('', 'end', text=f'{group_id}XXX')
-
-    # Insert flow nodes as children of the group
-    for _, row in group_data.iterrows():
-        flow_node = tree.insert(group_node, 'end', text=row['Flow'])
-        checkbutton_values[flow_node] = False
-        update_checkbutton(flow_node)
-
-# Pack the TreeView widget
-tree.pack()
-
-# Start the Tkinter event loop
-window.mainloop()
+compare_and_copy(source_directory, destination_directory)
