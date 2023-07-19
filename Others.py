@@ -34,7 +34,7 @@ def replace_node_entry(root, old_node_tag, new_node_tag, new_node_details):
         else:
             updated_root.append(node)
 
-    return updated_root
+    return ET.ElementTree(updated_root)  # Return the updated ElementTree
 
 # Sample replaced node entry details with label name
 new_node_details = {
@@ -55,12 +55,11 @@ try:
     root = tree.getroot()
 
     # Run the replace_node_entry function with the updated new_node_details
-    updated_root = replace_node_entry(root, 'Sum_APIInputCatchHandler.subflow:FCMComposite_1', 'MQINPUT_SF.subflow:FCMComposite_1', new_node_details)
+    updated_tree = replace_node_entry(root, 'Sum_APIInputCatchHandler.subflow:FCMComposite_1', 'MQINPUT_SF.subflow:FCMComposite_1', new_node_details)
 
     # Write the updated XML content to the file
-    updated_msgflow_data = ET.tostring(updated_root, encoding='utf-8', xml_declaration=True)
     with open('updated_msgflow.xml', 'wb') as file:
-        file.write(updated_msgflow_data)
+        updated_tree.write(file, encoding='utf-8', xml_declaration=True)
 
     print("XML data successfully updated and saved to 'updated_msgflow.xml'.")
 except FileNotFoundError:
