@@ -8,10 +8,10 @@ def get_max_node_id(root):
     return max_id
 
 def create_new_node(new_node_tag, new_node_details, nsmap):
-    new_node = ET.Element(new_node_tag, nsmap=nsmap)
+    new_node = ET.Element(new_node_tag)
     for key, value in new_node_details.items():
         new_node.set(key, value)
-    translation_element = ET.Element('translation', nsmap=nsmap)
+    translation_element = ET.Element('translation')
     translation_element.set('string', new_node_details['translation'])
     new_node.append(translation_element)
     return new_node
@@ -19,15 +19,17 @@ def create_new_node(new_node_tag, new_node_details, nsmap):
 def replace_node_entry(root, old_node_tag, new_node_tag, new_node_details):
     max_id = get_max_node_id(root)
     new_node_details['xmi:id'] = f'FCMComposite_1_{max_id + 1}'
-    
-    nsmap = root.nsmap  # Retrieve the original namespaces from the root element
 
-    updated_root = ET.Element(root.tag, nsmap=nsmap)
-    updated_root.attrib = root.attrib  # Retain the attributes from the original root
+    updated_root = ET.Element(root.tag)
+    for key, value in root.attrib.items():
+        updated_root.set(key, value)
+
+    for prefix, uri in root.nsmap.items():
+        ET.register_namespace(prefix, uri)
 
     for node in root.findall('.//nodes'):
         if node.get('xmi:type') == old_node_tag:
-            new_node = create_new_node(new_node_tag, new_node_details, nsmap)
+            new_node = create_new_node(new_node_tag, new_node_details, root.nsmap)
             updated_root.append(new_node)
         else:
             updated_root.append(node)
