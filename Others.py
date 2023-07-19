@@ -1,40 +1,67 @@
-import os
-import filecmp
-import shutil
+import xml.etree.ElementTree as ET
 
-def compare_and_copy(source_dir, destination_dir):
-    # Get the list of files and directories in the source directory
-    source_entries = os.listdir(source_dir)
+def get_max_node_id(root):
+    max_id = 0
+    for node in root.findall('.//nodes'):
+        node_id = int(node.get('{http://www.omg.org/XMI}id').split('_')[-1])
+        max_id = max(max_id, node_id)
+    return max_id
 
-    # Iterate through each entry in the source directory
-    for entry in source_entries:
-        source_entry_path = os.path.join(source_dir, entry)
-        destination_entry_path = os.path.join(destination_dir, entry)
+def create_new_node(new_node_tag, new_node_details, nsmap):
+    new_node = ET.Element(new_node_tag, nsmap=nsmap)
+    for key, value in new_node_details.items():
+        new_node.set(key, value)
+    translation_element = ET.Element('translation', nsmap=nsmap)
+    translation_element.set('string', new_node_details['translation'])
+    new_node.append(translation_element)
+    return new_node
 
-        # Check if the entry is a file
-        if os.path.isfile(source_entry_path):
-            # Check if the file exists in the destination directory
-            if not os.path.exists(destination_entry_path):
-                # File does not exist in destination, copy it from source
-                shutil.copy2(source_entry_path, destination_entry_path)
-            else:
-                # File exists in destination, compare contents
-                if not filecmp.cmp(source_entry_path, destination_entry_path, shallow=False):
-                    # Contents differ, update the file in destination with source content
-                    shutil.copy2(source_entry_path, destination_entry_path)
+def replace_node_entry(root, old_node_tag, new_node_tag, new_node_details):
+    max_id = get_max_node_id(root)
+    new_node_details['xmi:id'] = f'FCMComposite_1_{max_id + 1}'
+    
+    nsmap = root.nsmap  # Retrieve the original namespaces from the root element
 
-        # Check if the entry is a directory
-        elif os.path.isdir(source_entry_path):
-            # Check if the directory exists in the destination directory
-            if not os.path.exists(destination_entry_path):
-                # Directory does not exist in destination, copy it from source
-                shutil.copytree(source_entry_path, destination_entry_path)
-            else:
-                # Directory exists in destination, recursively compare and copy
-                compare_and_copy(source_entry_path, destination_entry_path)
+    updated_root = ET.Element(root.tag, nsmap=nsmap)
+    updated_root.attrib = root.attrib  # Retain the attributes from the original root
 
-# Example usage
-source_directory = 'path/to/source/directory'
-destination_directory = 'path/to/destination/directory'
+    for node in root.findall('.//nodes'):
+        if node.get('xmi:type') == old_node_tag:
+            new_node = create_new_node(new_node_tag, new_node_details, nsmap)
+            updated_root.append(new_node)
+        else:
+            updated_root.append(node)
 
-compare_and_copy(source_directory, destination_directory)
+    return updated_root
+
+# Sample replaced node entry details with label name
+new_node_details = {
+    'xmi:id': '',  # Replace with the new node ID after finding the maximum existing node ID and incrementing by 1
+    'xmi:type': 'MQINPUT_SF.subflow:FCMComposite_1',
+    'location': '400,300',
+    'translation': 'MQ Input SF',  # Update the translation value directly without xmi:type and single quotes
+    'labelName': 'postSum',  # Include the labelName attribute in the new node details
+    # Add other details for the new node entry here
+}
+
+# Get the file path from the user
+file_path = input("Enter the path of the file containing data: ")
+
+# Parse the XML data from the file to create the ElementTree
+try:
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    # Run the replace_node_entry function with the updated new_node_details
+    updated_root = replace_node_entry(root, 'Sum_APIInputCatchHandler.subflow:FCMComposite_1', 'MQINPUT_SF.subflow:FCMComposite_1', new_node_details)
+
+    # Write the updated XML content to the file
+    updated_msgflow_data = ET.tostring(updated_root, encoding='utf-8', xml_declaration=True)
+    with open('updated_msgflow.xml', 'wb') as file:
+        file.write(updated_msgflow_data)
+
+    print("XML data successfully updated and saved to 'updated_msgflow.xml'.")
+except FileNotFoundError:
+    print("File not found. Please check the file path and try again.")
+except ET.ParseError:
+    print("Invalid XML data in the file. Please check the XML content and try again.")
