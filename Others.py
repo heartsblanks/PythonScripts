@@ -1,43 +1,35 @@
-from lxml import etree
+import xmltodict
 
 def get_max_node_id(data):
     max_id = 0
-    for node in data.findall('.//nodes'):
-        node_id = int(node.get('{http://www.omg.org/XMI}id').split('_')[-1])
+    for node in data['ecore:EPackage']['composition']['nodes']:
+        node_id = int(node['@xmi:id'].split('_')[-1])
         max_id = max(max_id, node_id)
     return max_id
 
 def create_new_node(new_node_tag, new_node_details, namespaces):
-    new_node = etree.Element(new_node_tag, nsmap=namespaces)
-    for key, value in new_node_details.items():
-        new_node.set(key, value)
-    translation_element = etree.Element('translation', nsmap=namespaces)
-    translation_element.set('string', new_node_details['translation'])
-    new_node.append(translation_element)
+    new_node = {
+        '@xmi:type': new_node_tag,
+        '@xmi:id': new_node_details['xmi:id'],
+        '@location': new_node_details['location'],
+        'translation': {
+            '@xmi:type': 'utility:ConstantString',
+            '@string': new_node_details['translation']
+        }
+    }
     return new_node
 
-def replace_node_entry(root, old_node_tag, new_node_tag, new_node_details):
-    max_id = get_max_node_id(root)
+def replace_node_entry(data, old_node_tag, new_node_tag, new_node_details):
+    max_id = get_max_node_id(data)
     new_node_details['xmi:id'] = f'FCMComposite_1_{max_id + 1}'
 
-    namespaces = {}
-    for key, value in root.nsmap.items():
-        if key is None:
-            key = ''
-        namespaces[key] = value
+    for node in data['ecore:EPackage']['composition']['nodes']:
+        if node['@xmi:type'] == old_node_tag:
+            new_node = create_new_node(new_node_tag, new_node_details, data['ecore:EPackage']['@xmlns'])
+            data['ecore:EPackage']['composition']['nodes'].insert(0, new_node)
+            break
 
-    updated_root = etree.Element(root.tag, nsmap=namespaces)
-    for key, value in root.attrib.items():
-        updated_root.set(key, value)
-
-    for node in root.findall('.//nodes'):
-        if node.get('xmi:type') == old_node_tag:
-            new_node = create_new_node(new_node_tag, new_node_details, namespaces)
-            updated_root.append(new_node)
-        else:
-            updated_root.append(node)
-
-    return etree.ElementTree(updated_root)  # Return the updated ElementTree
+    return data
 
 # Sample replaced node entry details with label name
 new_node_details = {
@@ -53,12 +45,15 @@ new_node_details = {
 with open('your_file.xml', 'r') as file:
     xml_data = file.read()
 
-# Parse the XML data using lxml
-tree = etree.fromstring(xml_data)
+# Parse the XML data using xmltodict
+parsed_data = xmltodict.parse(xml_data)
 
 # Run the replace_node_entry function with the updated new_node_details
-updated_tree = replace_node_entry(tree, 'Sum_APIInputCatchHandler.subflow:FCMComposite_1', 'MQINPUT_SF.subflow:FCMComposite_1', new_node_details)
+updated_data = replace_node_entry(parsed_data, 'Sum_APIInputCatchHandler.subflow:FCMComposite_1', 'MQINPUT_SF.subflow:FCMComposite_1', new_node_details)
+
+# Convert the updated data back to XML format
+updated_xml = xmltodict.unparse(updated_data, pretty=True)
 
 # Write the updated XML content to the file
-with open('updated_msgflow.xml', 'wb') as file:
-    file.write(etree.tostring(updated_tree, encoding='utf-8', xml_declaration=True))
+with open('updated_msgflow.xml', 'w') as file:
+    file.write(updated_xml)
