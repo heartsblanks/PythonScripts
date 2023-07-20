@@ -2,7 +2,8 @@ import xmltodict
 
 def get_max_node_id(data):
     max_id = 0
-    for node in data['ecore:EPackage']['composition']['nodes']:
+    nodes = data['ecore:EPackage'].get('composition', {}).get('nodes', [])
+    for node in nodes:
         node_id = int(node['@xmi:id'].split('_')[-1])
         max_id = max(max_id, node_id)
     return max_id
@@ -23,10 +24,11 @@ def replace_node_entry(data, old_node_tag, new_node_tag, new_node_details):
     max_id = get_max_node_id(data)
     new_node_details['xmi:id'] = f'FCMComposite_1_{max_id + 1}'
 
-    for node in data['ecore:EPackage']['composition']['nodes']:
-        if node['@xmi:type'] == old_node_tag:
+    nodes = data['ecore:EPackage'].get('composition', {}).get('nodes', [])
+    for node in nodes:
+        if node.get('@xmi:type') == old_node_tag:
             new_node = create_new_node(new_node_tag, new_node_details, data['ecore:EPackage']['@xmlns'])
-            data['ecore:EPackage']['composition']['nodes'].insert(0, new_node)
+            nodes.insert(0, new_node)
             break
 
     return data
