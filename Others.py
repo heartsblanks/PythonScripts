@@ -1,46 +1,29 @@
 import xmltodict
 
-def get_max_node_id(data):
-    max_id = 0
-    nodes = data['ecore:EPackage'].get('composition', {}).get('nodes', [])
-    for node in nodes:
-        node_id = int(node['@xmi:id'].split('_')[-1])
-        max_id = max(max_id, node_id)
-    return max_id
-
-def create_new_node(new_node_tag, new_node_details, namespaces):
-    new_node = {
-        '@xmi:type': new_node_tag,
-        '@xmi:id': new_node_details['xmi:id'],
-        '@location': new_node_details['location'],
-        'translation': {
-            '@xmi:type': 'utility:ConstantString',
-            '@string': new_node_details['translation']
-        }
-    }
-    return new_node
-
 def replace_node_entry(data, old_node_tag, new_node_tag, new_node_details):
-    max_id = get_max_node_id(data)
-    new_node_details['xmi:id'] = f'FCMComposite_1_{max_id + 1}'
-
     nodes = data['ecore:EPackage'].get('composition', {}).get('nodes', [])
     for node in nodes:
         if node.get('@xmi:type') == old_node_tag:
-            new_node = create_new_node(new_node_tag, new_node_details, data['ecore:EPackage']['@xmlns'])
-            nodes.insert(0, new_node)
+            node['@xmi:type'] = new_node_tag
+            node['@xmi:id'] = new_node_details['xmi:id']
+            node['@location'] = new_node_details['location']
+            node['translation']['@string'] = new_node_details['translation']
+            node['@xmlns'] = data['ecore:EPackage']['@xmlns']
+            node['@xmlns:xmi'] = data['ecore:EPackage']['@xmlns:xmi']
+            node['@xmlns:eflow'] = data['ecore:EPackage']['@xmlns:eflow']
+            node['@xmlns:utility'] = data['ecore:EPackage']['@xmlns:utility']
+            node['@xmlns:ComIbmLabel.msgnode'] = data['ecore:EPackage']['@xmlns:ComIbmLabel.msgnode']
             break
 
     return data
 
 # Sample replaced node entry details with label name
 new_node_details = {
-    'xmi:id': '',  # Replace with the new node ID after finding the maximum existing node ID and incrementing by 1
+    'xmi:id': 'FCMComposite_1_9',  # Replace with the new node ID
     'xmi:type': 'MQINPUT_SF.subflow:FCMComposite_1',
     'location': '400,300',
     'translation': 'MQ Input SF',  # Update the translation value directly without xmi:type and single quotes
-    'labelName': 'postSum',  # Include the labelName attribute in the new node details
-    # Add other details for the new node entry here
+    # Include other attributes for the new node details if necessary
 }
 
 # Read the XML data from the file
