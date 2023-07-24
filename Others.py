@@ -59,10 +59,11 @@ for start_node_id in start_nodes:
                 if connection['@sourceNode'] == current_node_id
             ]
 
-            for target_node_id in target_node_ids:
+            for i, target_node_id in enumerate(target_node_ids, start=1):
                 for target_node in top_level_nodes:
                     if target_node['@xmi:id'] == target_node_id:
-                        target_node['@location'] = new_location
+                        target_location = increment_location(new_location, 0, -50 + (i - 1) * 50)
+                        target_node['@location'] = target_location
 
             # Move to the first target node for the next iteration
             if target_node_ids:
