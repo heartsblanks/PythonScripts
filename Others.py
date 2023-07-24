@@ -61,5 +61,6 @@ def update_node_locations(file_path):
     with open('updated_msgflow.xml', 'w') as file:
         file.write(updated_xml)
 
-# Call the function and pass the file path as an argument
-update_node_locations('your_file.xml')
+# Prompt the user to input the file name
+file_name = input("Enter the XML file name: ")
+update_node_locations(file_name)
