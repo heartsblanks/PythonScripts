@@ -25,12 +25,12 @@ for node in top_level_nodes:
         start_nodes.append(node_id)
 
 # Sort start nodes based on their Y location value
-start_nodes.sort(key=lambda node_id: int(top_level_nodes[node_id]['@location'].split(',')[1]))
+start_nodes.sort(key=lambda node_id: int(top_level_nodes[int(node_id)]['@location'].split(',')[1]))
 
 # Assign unique locations to start nodes
 y_increment = 20
 for index, start_node_id in enumerate(start_nodes, start=1):
-    start_node = top_level_nodes[start_node_id]
+    start_node = top_level_nodes[int(start_node_id)]
     current_location = start_node['@location']
     new_location = increment_location(current_location, 0, y_increment)
     start_node['@location'] = new_location
