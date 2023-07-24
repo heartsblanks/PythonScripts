@@ -25,12 +25,12 @@ for node in top_level_nodes:
         start_nodes.append(node_id)
 
 # Sort start nodes based on their Y location value
-start_nodes.sort(key=lambda node_id: int(top_level_nodes[int(node_id)]['@location'].split(',')[1]))
+start_nodes.sort(key=lambda node_id: int([node['@location'].split(',')[1] for node in top_level_nodes if node['@xmi:id'] == node_id][0]))
 
 # Assign unique locations to start nodes
 y_increment = 20
-for index, start_node_id in enumerate(start_nodes, start=1):
-    start_node = top_level_nodes[int(start_node_id)]
+for start_node_id in start_nodes:
+    start_node = next(node for node in top_level_nodes if node['@xmi:id'] == start_node_id)
     current_location = start_node['@location']
     new_location = increment_location(current_location, 0, y_increment)
     start_node['@location'] = new_location
@@ -45,11 +45,7 @@ for start_node_id in start_nodes:
 
     while current_node_id:
         # Find the current node using its ID
-        current_node = None
-        for node in top_level_nodes:
-            if node['@xmi:id'] == current_node_id:
-                current_node = node
-                break
+        current_node = next(node for node in top_level_nodes if node['@xmi:id'] == current_node_id)
 
         # If current node exists, assign a new location to its connected nodes
         if current_node:
