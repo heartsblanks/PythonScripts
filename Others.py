@@ -1,44 +1,65 @@
 import xmltodict
 
-def replace_node_entry(data, old_node_tag, new_node_tag, new_node_details):
-    nodes = data['ecore:EPackage'].get('composition', {}).get('nodes', [])
-    for node in nodes:
-        if node.get('@xmi:type') == old_node_tag:
-            node['@xmi:type'] = new_node_tag
-            node['@xmi:id'] = new_node_details['xmi:id']
-            node['@location'] = new_node_details['location']
-            node['translation']['@string'] = new_node_details['translation']
-            node['@xmlns'] = data['ecore:EPackage']['@xmlns']
-            node['@xmlns:xmi'] = data['ecore:EPackage']['@xmlns:xmi']
-            node['@xmlns:eflow'] = data['ecore:EPackage']['@xmlns:eflow']
-            node['@xmlns:utility'] = data['ecore:EPackage']['@xmlns:utility']
-            node['@xmlns:ComIbmLabel.msgnode'] = data['ecore:EPackage']['@xmlns:ComIbmLabel.msgnode']
-            break
+def increment_location(location, x, y):
+    x_value, y_value = map(int, location.split(','))
+    new_x = x_value + x
+    new_y = y_value + y
+    return f"{new_x},{new_y}"
 
-    return data
+def adjust_node_location(node_id, y_offset, target_nodes):
+    node = next(node for node in nodes_with_connections if node['@xmi:id'] == node_id)
+    location = node['@location']
+    
+    if node_id not in target_nodes:
+        node_locations[node_id] = location
+        y_offset += 50
+    
+    for connection in node['connections']:
+        target_node_id = connection['@targetNode']
+        target_terminal = connection.get('@targetTerminalName', '')
+        if target_terminal != 'InTerminal.in':
+            continue
 
-# Sample replaced node entry details with label name
-new_node_details = {
-    'xmi:id': 'FCMComposite_1_9',  # Replace with the new node ID
-    'xmi:type': 'MQINPUT_SF.subflow:FCMComposite_1',
-    'location': '400,300',
-    'translation': 'MQ Input SF',  # Update the translation value directly without xmi:type and single quotes
-    # Include other attributes for the new node details if necessary
-}
+        if target_node_id in target_nodes:
+            node_locations[target_node_id] = increment_location(node_locations[node_id], 0, y_offset)
+            y_offset += 50
+        else:
+            adjust_node_location(target_node_id, y_offset, target_nodes)
 
-# Read the XML data from the file
-with open('your_file.xml', 'r') as file:
-    xml_data = file.read()
+def update_node_locations(file_path):
+    # Read the XML data from the file
+    with open(file_path, 'r') as file:
+        xml_data = file.read()
 
-# Parse the XML data using xmltodict
-parsed_data = xmltodict.parse(xml_data)
+    # Parse the XML data using xmltodict
+    parsed_data = xmltodict.parse(xml_data)
 
-# Run the replace_node_entry function with the updated new_node_details
-updated_data = replace_node_entry(parsed_data, 'Sum_APIInputCatchHandler.subflow:FCMComposite_1', 'MQINPUT_SF.subflow:FCMComposite_1', new_node_details)
+    # Find all nodes with connections
+    nodes_with_connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']['nodes']
 
-# Convert the updated data back to XML format
-updated_xml = xmltodict.unparse(updated_data, pretty=True)
+    # Extract the target nodes of each connection
+    target_nodes = set(connection['@targetNode'] for node in nodes_with_connections for connection in node['connections'])
 
-# Write the updated XML content to the file
-with open('updated_msgflow.xml', 'w') as file:
-    file.write(updated_xml)
+    # Create a dictionary to store the node locations
+    node_locations = {}
+
+    # Handle each node
+    for node in nodes_with_connections:
+        node_id = node['@xmi:id']
+        adjust_node_location(node_id, 0, target_nodes)
+
+    # Update the locations in the parsed_data dictionary
+    for node in nodes_with_connections:
+        node_id = node['@xmi:id']
+        if node_id in node_locations:
+            node['@location'] = node_locations[node_id]
+
+    # Convert the updated data back to XML format
+    updated_xml = xmltodict.unparse(parsed_data, pretty=True)
+
+    # Write the updated XML content to the file
+    with open('updated_msgflow.xml', 'w') as file:
+        file.write(updated_xml)
+
+# Call the function and pass the file path as an argument
+update_node_locations('your_file.xml')
