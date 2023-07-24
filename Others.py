@@ -7,7 +7,7 @@ def increment_location(location, x, y):
     return f"{new_x},{new_y}"
 
 def adjust_node_location(node_id, y_offset, target_nodes, nodes_with_connections, node_locations):
-    node = next(node for node in nodes_with_connections if node['@xmi:id'] == node_id)
+    node = next(node for node in nodes_with_connections['nodes'] if node['@xmi:id'] == node_id)
     location = node['@location']
     
     if node_id not in target_nodes:
