@@ -1,3 +1,48 @@
+import xmltodict
+
+def increment_location(location, x_increment, y_increment):
+    x, y = map(int, location.split(','))
+    new_x = x + x_increment
+    new_y = y + y_increment
+    return f"{new_x},{new_y}"
+
+# Read the XML data from the file
+with open('your_msgflow_file.xml', 'r') as file:
+    xml_data = file.read()
+
+# Parse the XML data using xmltodict
+parsed_data = xmltodict.parse(xml_data)
+
+# Get the nodes and connections
+top_level_nodes = parsed_data['ecore:EPackage']['eClassifiers']['composition']['nodes']
+connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']['connections']
+
+# Find the start nodes (nodes without input connections)
+start_nodes = []
+for node in top_level_nodes:
+    node_id = node['@xmi:id']
+    if not any(connection['@targetNode'] == node_id for connection in connections):
+        start_nodes.append(node_id)
+
+# Sort the start nodes based on their Y location in ascending order
+start_nodes.sort(key=lambda node_id: int(top_level_nodes[int(node_id.split('_')[1])]['@location'].split(',')[1]))
+
+# Assign unique locations to start nodes
+y_increment = 100
+for i, start_node_id in enumerate(start_nodes):
+    if i == 0:
+        new_location = "0,20"
+        y_location = 20
+    else:
+        new_location = f"0,{y_location + i * y_increment}"
+
+    # Find the start node and update its location
+    start_node = next(node for node in top_level_nodes if node['@xmi:id'] == start_node_id)
+    start_node['@location'] = new_location
+
+# Create a set to keep track of updated nodes
+updated_nodes = set()
+
 # Follow connections and assign new locations to connected nodes
 for start_node_id in start_nodes:
     current_node_id = start_node_id
