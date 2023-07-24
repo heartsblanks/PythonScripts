@@ -17,18 +17,15 @@ parsed_data = xmltodict.parse(xml_data)
 top_level_nodes = parsed_data['ecore:EPackage']['eClassifiers']['composition']['nodes']
 connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']['connections']
 
-# Find the start nodes (nodes without input connections)
-start_nodes = []
-for node in top_level_nodes:
-    node_id = node['@xmi:id']
-    if not any(connection['@targetNode'] == node_id for connection in connections):
-        start_nodes.append(node_id)
-
-# Sort the start nodes based on their Y location in ascending order
-start_nodes.sort(key=lambda node_id: int(top_level_nodes[int(node_id.split('_')[1])]['@location'].split(',')[1]))
+# Sort start nodes based on y location in ascending order
+start_nodes = [node['@xmi:id'] for node in top_level_nodes if not any(connection['@targetNode'] == node['@xmi:id'] for connection in connections)]
+start_nodes.sort(key=lambda node_id: int([node['@location'].split(',')[1] for node in top_level_nodes if node['@xmi:id'] == node_id][0]))
 
 # Assign unique locations to start nodes
-y_increment = 100
+y_increment = 300
+updated_nodes = set()
+target_node_positions = {}
+
 for i, start_node_id in enumerate(start_nodes):
     if i == 0:
         new_location = "0,20"
@@ -36,19 +33,11 @@ for i, start_node_id in enumerate(start_nodes):
     else:
         new_location = f"0,{y_location + i * y_increment}"
 
-    # Find the start node and update its location
     start_node = next(node for node in top_level_nodes if node['@xmi:id'] == start_node_id)
     start_node['@location'] = new_location
 
-# Create a set to keep track of updated nodes
-updated_nodes = set()
-
-# Follow connections and assign new locations to connected nodes
-for start_node_id in start_nodes:
+    # Follow connections and assign new locations to connected nodes
     current_node_id = start_node_id
-
-    # Create a dictionary to store the target nodes and their Y increments
-    target_node_positions = {}
 
     while current_node_id:
         # Find the current node using its ID
@@ -74,12 +63,13 @@ for start_node_id in start_nodes:
                         if all_same_target:
                             target_location = increment_location(new_location, 0, 0)
                         else:
-                            target_location = increment_location(new_location, 0, -50 + (i - 1) * 50)
+                            target_location = increment_location(new_location, 0, target_node_positions.get(target_node_id, -50 + (i - 1) * 50))
 
                         target_node['@location'] = target_location
 
                         # Store the target node and its Y increment in the dictionary
-                        target_node_positions[target_node_id] = -50 + (i - 1) * 50
+                        if not all_same_target:
+                            target_node_positions[target_node_id] = -50 + (i - 1) * 50
 
                         # Add the target node to the updated_nodes set
                         updated_nodes.add(target_node_id)
@@ -93,16 +83,6 @@ for start_node_id in start_nodes:
             else:
                 # If there are no target nodes, exit the loop
                 break
-
-    # Update the Y increments for all target nodes connected to the same node
-    for target_node_id in target_node_positions:
-        for target_node in top_level_nodes:
-            if target_node['@xmi:id'] == target_node_id and target_node_id not in updated_nodes:
-                current_location = target_node['@location']
-                x, y = map(int, current_location.split(','))
-                new_y = y + target_node_positions[target_node_id]
-                target_node['@location'] = f"{x},{new_y}"
-                updated_nodes.add(target_node_id)
 
 # Convert the updated data back to XML format
 updated_xml = xmltodict.unparse(parsed_data, pretty=True)
