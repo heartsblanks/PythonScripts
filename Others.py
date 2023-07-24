@@ -40,6 +40,9 @@ for index, start_node_id in enumerate(start_nodes, start=1):
 for start_node_id in start_nodes:
     current_node_id = start_node_id
 
+    # Create a dictionary to store the target nodes and their Y increments
+    target_node_positions = {}
+
     while current_node_id:
         # Find the current node using its ID
         current_node = None
@@ -59,11 +62,21 @@ for start_node_id in start_nodes:
                 if connection['@sourceNode'] == current_node_id
             ]
 
+            # Check if all target nodes are the same
+            all_same_target = len(set(target_node_ids)) == 1
+
             for i, target_node_id in enumerate(target_node_ids, start=1):
                 for target_node in top_level_nodes:
                     if target_node['@xmi:id'] == target_node_id:
-                        target_location = increment_location(new_location, 0, -50 + (i - 1) * 50)
+                        if all_same_target:
+                            target_location = increment_location(new_location, 0, 0)
+                        else:
+                            target_location = increment_location(new_location, 0, -50 + (i - 1) * 50)
+
                         target_node['@location'] = target_location
+
+                        # Store the target node and its Y increment in the dictionary
+                        target_node_positions[target_node_id] = -50 + (i - 1) * 50
 
             # Move to the first target node for the next iteration
             if target_node_ids:
@@ -71,6 +84,15 @@ for start_node_id in start_nodes:
             else:
                 # If there are no target nodes, exit the loop
                 break
+
+    # Update the Y increments for all target nodes connected to the same node
+    for target_node_id in target_node_positions:
+        for target_node in top_level_nodes:
+            if target_node['@xmi:id'] == target_node_id:
+                current_location = target_node['@location']
+                x, y = map(int, current_location.split(','))
+                new_y = y + target_node_positions[target_node_id]
+                target_node['@location'] = f"{x},{new_y}"
 
 # Convert the updated data back to XML format
 updated_xml = xmltodict.unparse(parsed_data, pretty=True)
