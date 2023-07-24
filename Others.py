@@ -1,61 +1,79 @@
 import xmltodict
 
-def increment_location(location, x, y):
-    x_value, y_value = map(int, location.split(','))
-    new_x = x_value + x
-    new_y = y_value + y
+def increment_location(location, x_increment, y_increment):
+    x, y = map(int, location.split(','))
+    new_x = x + x_increment
+    new_y = y + y_increment
     return f"{new_x},{new_y}"
 
-def adjust_node_location(node_id, y_offset, target_nodes, node_locations):
-    node = next(node for node in nodes_with_connections if node['@xmi:id'] == node_id)
-    location = node['@location']
-    
-    if node_id not in target_nodes:
-        node['@location'] = increment_location(location, 50, y_offset)
-        y_offset += 50
-    
-    for connection in node.get('connections', []):
-        if connection['@sourceNode'] == node_id and connection['@sourceTerminalName'] != 'InTerminal.in':
-            target_node_id = connection['@targetNode']
-            if target_node_id in target_nodes:
-                target_node = next(node for node in nodes_with_connections if node['@xmi:id'] == target_node_id)
-                target_node['@location'] = increment_location(location, 0, y_offset)
-                y_offset += 50
+# Read the XML data from the file
+with open('your_msgflow_file.xml', 'r') as file:
+    xml_data = file.read()
+
+# Parse the XML data using xmltodict
+parsed_data = xmltodict.parse(xml_data)
+
+# Get the nodes and connections
+top_level_nodes = parsed_data['ecore:EPackage']['eClassifiers']['composition']['nodes']
+connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']['connections']
+
+# Find the start nodes (nodes without input connections)
+start_nodes = []
+for node in top_level_nodes:
+    node_id = node['@xmi:id']
+    if not any(connection['@targetNode'] == node_id for connection in connections):
+        start_nodes.append(node_id)
+
+# Assign unique locations to start nodes
+for index, start_node_id in enumerate(start_nodes, start=1):
+    start_node = None
+    for node in top_level_nodes:
+        if node['@xmi:id'] == start_node_id:
+            start_node = node
+            break
+    if start_node:
+        current_location = start_node['@location']
+        new_location = increment_location(current_location, 50 * index, 0)
+        start_node['@location'] = new_location
+
+# Follow connections and assign new locations to connected nodes
+for start_node_id in start_nodes:
+    current_node_id = start_node_id
+
+    while current_node_id:
+        # Find the current node using its ID
+        current_node = None
+        for node in top_level_nodes:
+            if node['@xmi:id'] == current_node_id:
+                current_node = node
+                break
+
+        # If current node exists, assign a new location to its connected nodes
+        if current_node:
+            current_location = current_node['@location']
+            new_location = increment_location(current_location, 50, 0)
+
+            # Find the target nodes from connections and update their locations
+            target_node_ids = [
+                connection['@targetNode'] for connection in connections
+                if connection['@sourceNode'] == current_node_id
+            ]
+
+            for target_node_id in target_node_ids:
+                for target_node in top_level_nodes:
+                    if target_node['@xmi:id'] == target_node_id:
+                        target_node['@location'] = new_location
+
+            # Move to the first target node for the next iteration
+            if target_node_ids:
+                current_node_id = target_node_ids[0]
             else:
-                adjust_node_location(target_node_id, y_offset, target_nodes, node_locations)
+                # If there are no target nodes, exit the loop
+                break
 
-def update_node_locations(file_path):
-    # Read the XML data from the file
-    with open(file_path, 'r') as file:
-        xml_data = file.read()
+# Convert the updated data back to XML format
+updated_xml = xmltodict.unparse(parsed_data, pretty=True)
 
-    # Parse the XML data using xmltodict
-    parsed_data = xmltodict.parse(xml_data)
-
-    # Find all nodes with connections
-    nodes_with_connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']['nodes']
-
-    # Identify start nodes
-    start_nodes = set()
-    for node in nodes_with_connections:
-        node_id = node['@xmi:id']
-        for connection in node.get('connections', []):
-            target_node_id = connection['@targetNode']
-            start_nodes.discard(target_node_id)
-            start_nodes.add(node_id)
-
-    # Process nodes in sequence
-    node_locations = {}
-    for node_id in start_nodes:
-        adjust_node_location(node_id, 0, start_nodes, node_locations)
-
-    # Convert the updated data back to XML format
-    updated_xml = xmltodict.unparse(parsed_data, pretty=True)
-
-    # Write the updated XML content to the file
-    with open('updated_msgflow.xml', 'w') as file:
-        file.write(updated_xml)
-
-# Prompt the user to input the file name
-file_name = input("Enter the XML file name: ")
-update_node_locations(file_name)
+# Write the updated XML content to the file
+with open('updated_msgflow.xml', 'w') as file:
+    file.write(updated_xml)
