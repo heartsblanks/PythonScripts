@@ -6,7 +6,7 @@ def increment_location(location, x, y):
     new_y = y_value + y
     return f"{new_x},{new_y}"
 
-def adjust_node_location(node_id, y_offset, target_nodes):
+def adjust_node_location(node_id, y_offset, target_nodes, nodes_with_connections, node_locations):
     node = next(node for node in nodes_with_connections if node['@xmi:id'] == node_id)
     location = node['@location']
     
@@ -24,7 +24,7 @@ def adjust_node_location(node_id, y_offset, target_nodes):
             node_locations[target_node_id] = increment_location(node_locations[node_id], 0, y_offset)
             y_offset += 50
         else:
-            adjust_node_location(target_node_id, y_offset, target_nodes)
+            adjust_node_location(target_node_id, y_offset, target_nodes, nodes_with_connections, node_locations)
 
 def update_node_locations(file_path):
     # Read the XML data from the file
@@ -46,7 +46,7 @@ def update_node_locations(file_path):
     # Handle each node
     for node in nodes_with_connections:
         node_id = node['@xmi:id']
-        adjust_node_location(node_id, 0, target_nodes)
+        adjust_node_location(node_id, 0, target_nodes, nodes_with_connections, node_locations)
 
     # Update the locations in the parsed_data dictionary
     for node in nodes_with_connections:
