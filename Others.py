@@ -14,17 +14,14 @@ def adjust_node_location(node_id, y_offset, target_nodes, nodes_with_connections
         node_locations[node_id] = location
         y_offset += 50
     
-    for connection in node['connections']:
-        target_node_id = connection['@targetNode']
-        target_terminal = connection.get('@targetTerminalName', '')
-        if target_terminal != 'InTerminal.in':
-            continue
-
-        if target_node_id in target_nodes:
-            node_locations[target_node_id] = increment_location(node_locations[node_id], 0, y_offset)
-            y_offset += 50
-        else:
-            adjust_node_location(target_node_id, y_offset, target_nodes, nodes_with_connections, node_locations)
+    for connection in nodes_with_connections['connections']:
+        if connection['@sourceNode'] == node_id and connection['@sourceTerminalName'] != 'InTerminal.in':
+            target_node_id = connection['@targetNode']
+            if target_node_id in target_nodes:
+                node_locations[target_node_id] = increment_location(node_locations[node_id], 0, y_offset)
+                y_offset += 50
+            else:
+                adjust_node_location(target_node_id, y_offset, target_nodes, nodes_with_connections, node_locations)
 
 def update_node_locations(file_path):
     # Read the XML data from the file
@@ -35,21 +32,21 @@ def update_node_locations(file_path):
     parsed_data = xmltodict.parse(xml_data)
 
     # Find all nodes with connections
-    nodes_with_connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']['nodes']
+    nodes_with_connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']
 
     # Extract the target nodes of each connection
-    target_nodes = set(connection['@targetNode'] for node in nodes_with_connections for connection in node['connections'])
+    target_nodes = set(connection['@targetNode'] for connection in nodes_with_connections['connections'])
 
     # Create a dictionary to store the node locations
     node_locations = {}
 
     # Handle each node
-    for node in nodes_with_connections:
+    for node in nodes_with_connections['nodes']:
         node_id = node['@xmi:id']
         adjust_node_location(node_id, 0, target_nodes, nodes_with_connections, node_locations)
 
     # Update the locations in the parsed_data dictionary
-    for node in nodes_with_connections:
+    for node in nodes_with_connections['nodes']:
         node_id = node['@xmi:id']
         if node_id in node_locations:
             node['@location'] = node_locations[node_id]
