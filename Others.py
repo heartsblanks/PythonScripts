@@ -19,28 +19,17 @@ def append_missing_values(original_values, target_values, target_parent, tag_nam
             new_element = ET.SubElement(target_parent, tag_name)
             new_element.text = value
 
-def find_parent_element(root, tags):
-    current_element = root
-    for tag in tags:
-        child_element = None
-        for child in current_element:
-            if child.tag == tag:
-                child_element = child
-                break
-        if child_element is None:
-            child_element = ET.SubElement(current_element, tag)
-        current_element = child_element
-    return current_element
+def find_parent_element(root, tags, index):
+    if index >= len(tags):
+        return root
 
-def is_nested_tag(tag_elements, index):
-    if index >= len(tag_elements):
-        return False
+    current_tag = tags[index]
+    for child in root:
+        if child.tag == current_tag:
+            return find_parent_element(child, tags, index + 1)
 
-    current_tag = tag_elements[index]
-    for i in range(index + 1, len(tag_elements)):
-        if current_tag in tag_elements[i]:
-            return True
-    return False
+    new_element = ET.SubElement(root, current_tag)
+    return find_parent_element(new_element, tags, index + 1)
 
 def write_project_file(file_path, root):
     tree = ET.ElementTree(root)
@@ -56,10 +45,7 @@ def update_project_file(source_file, destination_file, tags):
         source_values = get_values_by_tags(source_root, [tag])
         destination_values = get_values_by_tags(destination_root, [tag])
 
-        if is_nested_tag(tag_elements, 0):
-            target_parent = find_parent_element(destination_root, tag_elements)
-        else:
-            target_parent = destination_root
+        target_parent = find_parent_element(destination_root, tag_elements, 0)
 
         tag_name = tag_elements[-1]
         append_missing_values(source_values, destination_values, target_parent, tag_name)
