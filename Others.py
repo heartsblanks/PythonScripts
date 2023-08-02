@@ -1,68 +1,74 @@
-import xmltodict
+import xml.etree.ElementTree as ET
 
-def increment_location(location, x_increment, y_increment):
-    x, y = map(int, location.split(','))
-    new_x = x + x_increment
-    new_y = y + y_increment
-    return f"{new_x},{new_y}"
+def read_project_file(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    return root
 
-def update_node_locations(node_id, x_increment, y_increment):
-    current_node = next((node for node in top_level_nodes if node['@xmi:id'] == node_id), None)
-    if current_node and node_id not in updated_nodes:
-        current_location = current_node['@location']
-        new_location = increment_location(current_location, x_increment, y_increment)
-        current_node['@location'] = new_location
-        updated_nodes.add(node_id)
+def get_values_by_tags(root, tags):
+    values = []
+    for tag in tags:
+        elements = root.findall(tag)
+        for element in elements:
+            values.append(element.text)
+    return values
 
-        # Find downstream target nodes and sort them by target terminal name
-        downstream_connections = [connection for connection in connections if connection['@sourceNode'] == node_id]
-        downstream_target_nodes = sorted(set(connection['@targetNode'] for connection in downstream_connections),
-                                         key=lambda target_node_id: next(connection['@targetTerminalName'] for connection in connections if connection['@targetNode'] == target_node_id))
+def append_missing_values(original_values, target_values, target_parent, tag_name):
+    for value in original_values:
+        if value not in target_values:
+            new_element = ET.SubElement(target_parent, tag_name)
+            new_element.text = value
 
-        # Recursively update locations for downstream target nodes
-        for i, target_node_id in enumerate(downstream_target_nodes):
-            target_node = next((node for node in top_level_nodes if node['@xmi:id'] == target_node_id), None)
-            if target_node:
-                all_same_target = all(connection['@targetNode'] == target_node_id for connection in downstream_connections)
-                y_increment_value = target_node_positions.get(target_node_id, 0)
+def find_parent_element(root, tags):
+    current_element = root
+    for tag in tags:
+        child_element = None
+        for child in current_element:
+            if child.tag == tag:
+                child_element = child
+                break
+        if child_element is None:
+            child_element = ET.SubElement(current_element, tag)
+        current_element = child_element
+    return current_element
 
-                # Adjust Y increment based on the number of downstream target nodes and their positions
-                if not all_same_target:
-                    y_increment_value = -50 + (i - 1) * 50
+def is_nested_tag(tag_elements, index):
+    if index >= len(tag_elements):
+        return False
 
-                update_node_locations(target_node_id, 0, y_increment_value)
+    current_tag = tag_elements[index]
+    for i in range(index + 1, len(tag_elements)):
+        if current_tag in tag_elements[i]:
+            return True
+    return False
 
-# Read the XML data from the file
-with open('your_msgflow_file.xml', 'r') as file:
-    xml_data = file.read()
+def write_project_file(file_path, root):
+    tree = ET.ElementTree(root)
+    root.set('xmlns', 'http://schemas.eclipse.org/2004/09/standard-fe')
+    tree.write(file_path, encoding='UTF-8', xml_declaration=True)
 
-# Parse the XML data using xmltodict
-parsed_data = xmltodict.parse(xml_data)
+def update_project_file(source_file, destination_file, tags):
+    source_root = read_project_file(source_file)
+    destination_root = read_project_file(destination_file)
 
-# Get the nodes and connections
-top_level_nodes = parsed_data['ecore:EPackage']['eClassifiers']['composition']['nodes']
-connections = parsed_data['ecore:EPackage']['eClassifiers']['composition']['connections']
+    for tag in tags:
+        tag_elements = tag.split('/')
+        source_values = get_values_by_tags(source_root, [tag])
+        destination_values = get_values_by_tags(destination_root, [tag])
 
-# Find the start nodes (nodes without input connections)
-start_nodes = []
-for node in top_level_nodes:
-    node_id = node['@xmi:id']
-    if not any(connection['@targetNode'] == node_id for connection in connections):
-        start_nodes.append(node_id)
+        if is_nested_tag(tag_elements, 0):
+            target_parent = find_parent_element(destination_root, tag_elements)
+        else:
+            target_parent = destination_root
 
-# Assign unique locations to start nodes
-updated_nodes = set()
-target_node_positions = {}
-for i, start_node_id in enumerate(start_nodes):
-    start_node = next((node for node in top_level_nodes if node['@xmi:id'] == start_node_id), None)
-    if start_node:
-        y_increment_value = 20 + i * 100
-        start_node['@location'] = f"0,{y_increment_value}"
-        update_node_locations(start_node_id, 0, y_increment_value)
+        tag_name = tag_elements[-1]
+        append_missing_values(source_values, destination_values, target_parent, tag_name)
 
-# Convert the updated data back to XML format
-updated_xml = xmltodict.unparse(parsed_data, pretty=True)
+    write_project_file(destination_file, destination_root)
 
-# Write the updated XML content to the file
-with open('updated_msgflow.xml', 'w') as file:
-    file.write(updated_xml)
+# Example usage:
+source_project_file = 'path_to_source_project_file.xml'
+destination_project_file = 'path_to_destination_project_file.xml'
+tags_to_update = ['buildSpec/buildCommand/name', 'natures/nature']
+
+update_project_file(source_project_file, destination_project_file, tags_to_update)
