@@ -13,6 +13,16 @@
         <os.detected>${os.detected.classifier}</os.detected>
         <JCN_HOME_WINDOWS>C:\path\to\ACE\library</JCN_HOME_WINDOWS>
         <JCN_HOME_LINUX>/path/to/ACE/library</JCN_HOME_LINUX>
+
+        <JCN_HOME>
+            <if>
+                <condition>
+                    <equals arg1="${os.detected}" arg2="windows"/>
+                </condition>
+                <then>${JCN_HOME_WINDOWS}</then>
+                <else>${JCN_HOME_LINUX}</else>
+            </if>
+        </JCN_HOME>
     </properties>
 
     <build>
@@ -32,19 +42,6 @@
             </plugin>
         </plugins>
     </build>
-
-    <properties>
-        <!-- Other properties -->
-        <JCN_HOME>
-            <if>
-                <condition>
-                    <equals arg1="${os.detected}" arg2="windows"/>
-                </condition>
-                <then>${JCN_HOME_WINDOWS}</then>
-                <else>${JCN_HOME_LINUX}</else>
-            </if>
-        </JCN_HOME>
-    </properties>
 
     <dependencies>
         <!-- Other dependencies -->
