@@ -1,60 +1,70 @@
-import xml.etree.ElementTree as ET
+import requests
+from datetime import datetime
+import json
 
-def read_project_file(file_path):
-    tree = ET.parse(file_path)
-    root = tree.getroot()
-    return root
+class MavenArtifact:
+    def __init__(self):
+        self.group = None
+        self.id = None
+        self.specificVersion = None
+        self.baseVersion = None
+        self.lastUpdated = None
+        self.assets = []
 
-def get_values_by_tags(root, tags):
-    values = []
-    for tag in tags:
-        elements = root.findall(tag)
-        for element in elements:
-            values.append(element.text)
-    return values
+class MavenArtifactAsset:
+    def __init__(self):
+        self.path = None
+        self.fileExtension = None
+        self.classifier = None
 
-def append_missing_values(original_values, target_values, target_parent, tag_name):
-    for value in original_values:
-        if value not in target_values:
-            new_element = ET.SubElement(target_parent, tag_name)
-            new_element.text = value
+def fetch_artifacts(repo_name, group_id, artifact_id, start_date):
+    url = f"https://your.repository.url/api/v1/components?repository={repo_name}&group={group_id}&name={artifact_id}&version=&format=maven2"
 
-def find_parent_element(root, tags, index):
-    if index >= len(tags):
-        return root
+    response = requests.get(url)
+    response_json = response.json()
 
-    current_tag = tags[index]
-    for child in root:
-        if child.tag == current_tag:
-            return find_parent_element(child, tags, index + 1)
+    artifacts = {}
+    for asset in response_json:
+        if "maven2" in asset["format"]:
+            maven_props = asset["format"]["maven2"]
+            artifact = MavenArtifact()
+            artifact.group = maven_props.get("groupId")
+            artifact.id = maven_props.get("artifactId")
+            artifact.specificVersion = maven_props.get("version")
+            artifact.baseVersion = maven_props.get("baseVersion")
+            artifact.lastUpdated = datetime.strptime(asset["created"], "%Y-%m-%dT%H:%M:%S.%fZ")
 
-    new_element = ET.SubElement(root, current_tag)
-    return find_parent_element(new_element, tags, index + 1)
+            artifact_asset = MavenArtifactAsset()
+            artifact_asset.path = f"/repository/{repo_name}/{asset['name']}"
+            artifact_asset.fileExtension = maven_props.get("extension")
+            artifact_asset.classifier = maven_props.get("classifier")
+            artifact.assets.append(artifact_asset)
 
-def write_project_file(file_path, root):
-    tree = ET.ElementTree(root)
-    root.set('xmlns', 'http://schemas.eclipse.org/2004/09/standard-fe')
-    tree.write(file_path, encoding='UTF-8', xml_declaration=True)
+            artifacts[artifact.specificVersion] = artifact
 
-def update_project_file(source_file, destination_file, tags):
-    source_root = read_project_file(source_file)
-    destination_root = read_project_file(destination_file)
+    sorted_artifacts = sorted(artifacts.values(), key=lambda x: x.lastUpdated, reverse=True)
+    return sorted_artifacts
 
-    for tag in tags:
-        tag_elements = tag.split('/')
-        source_values = get_values_by_tags(source_root, [tag])
-        destination_values = get_values_by_tags(destination_root, [tag])
+repo_name = "your_repo_name"
+group_id = "your_group_id"
+artifact_id = "your_artifact_id"
+start_date = "yyyy-mm-dd"
 
-        target_parent = find_parent_element(destination_root, tag_elements, 0)
+specific_version_artifacts = fetch_artifacts(repo_name, group_id, artifact_id, start_date)
 
-        tag_name = tag_elements[-1]
-        append_missing_values(source_values, destination_values, target_parent, tag_name)
+result = []
+for artifact in specific_version_artifacts:
+    result.append({
+        "groupId": artifact.group,
+        "artifactId": artifact.id,
+        "version": artifact.baseVersion,
+        "updated": artifact.lastUpdated.isoformat(),
+        "files": [{
+            "path": asset.path,
+            "fileExtension": asset.fileExtension,
+            "classifier": asset.classifier
+        } for asset in artifact.assets]
+    })
 
-    write_project_file(destination_file, destination_root)
-
-# Example usage:
-source_project_file = 'path_to_source_project_file.xml'
-destination_project_file = 'path_to_destination_project_file.xml'
-tags_to_update = ['buildSpec/buildCommand/name', 'natures/nature']
-
-update_project_file(source_project_file, destination_project_file, tags_to_update)
+json_output = json.dumps(result, indent=4)
+print(json_output)
