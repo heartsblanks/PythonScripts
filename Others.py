@@ -1,56 +1,74 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+import xml.etree.ElementTree as ET
+import json
+import base64
+import urllib.request
 
-    <groupId>com.example</groupId>
-    <artifactId>my-project</artifactId>
-    <version>1.0-SNAPSHOT</version>
+# Step 1: Parse .classpath file
+classpath_file = ".classpath"
+tree = ET.parse(classpath_file)
+root = tree.getroot()
 
-    <properties>
-        <!-- Other properties -->
-        <os.detected>${os.detected.classifier}</os.detected>
-        <JCN_HOME_WINDOWS>C:\path\to\ACE\library</JCN_HOME_WINDOWS>
-        <JCN_HOME_LINUX>/path/to/ACE/library</JCN_HOME_LINUX>
+# Step 2: Read dependency file
+dependency_file = "dependency.json"
+with open(dependency_file, "r") as f:
+    dependency_data = json.load(f)
 
-        <JCN_HOME>
-            <if>
-                <condition>
-                    <equals arg1="${os.detected}" arg2="windows"/>
-                </condition>
-                <then>${JCN_HOME_WINDOWS}</then>
-                <else>${JCN_HOME_LINUX}</else>
-            </if>
-        </JCN_HOME>
-    </properties>
+# Step 3 and 4: Check and search using Nexus API
+updated_dependencies = []
+for dependency in dependency_data:
+    found = False
+    for entry in root.findall(".//classpathentry[@kind='lib']"):
+        path = entry.get("path")
+        if (
+            dependency["groupId"] in path
+            and dependency["artifactId"] in path
+            and dependency["version"] in path
+        ):
+            found = True
+            break
+        # If the jar path includes a directory, handle that case too
+        elif (
+            f"/{dependency['groupId'].replace('.', '/')}/{dependency['artifactId']}/{dependency['version']}" in path
+        ):
+            found = True
+            break
+    
+    if not found:
+        # Step 4: Search for artifact metadata using Nexus API with basic authentication
+        nexus_base_url = "https://your-nexus-server-url"
+        search_endpoint = "/service/rest/v1/search"
+        search_query = f"a:{dependency['artifactId']}+AND+maven.extension=jar"
+        
+        username = "your-username"
+        password = "your-password"
+        auth_token = base64.b64encode(f"{username}:{password}".encode()).decode()
+        
+        headers = {"Authorization": f"Basic {auth_token}"}
+        
+        request_url = f"{nexus_base_url}{search_endpoint}?q={search_query}"
+        request = urllib.request.Request(request_url, headers=headers)
+        
+        with urllib.request.urlopen(request) as response:
+            data = json.loads(response.read().decode())
+            if data.get("items"):
+                for item in data["items"]:
+                    # Check if the result is an actual JAR file
+                    if item.get("format") == "maven2" and item.get("name").endswith(".jar"):
+                        matched_artifact = item
+                        # Extract necessary information from matched_artifact
+                        # ...
+                        updated_dependencies.append(dependency)
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>kr.motd.maven</groupId>
-                <artifactId>os-maven-plugin</artifactId>
-                <version>1.6.2</version>
-                <executions>
-                    <execution>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>detect</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+# Step 5: Remove from .classpath file
+for entry in root.findall(".//classpathentry[@kind='lib']"):
+    path = entry.get("path")
+    for dependency in updated_dependencies:
+        if (
+            dependency["groupId"] in path
+            and dependency["artifactId"] in path
+            and dependency["version"] in path
+        ):
+            root.remove(entry)
+            break
 
-    <dependencies>
-        <!-- Other dependencies -->
-        <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>your-ace-related-artifact</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${JCN_HOME}/your-ace-library.jar</systemPath>
-        </dependency>
-    </dependencies>
-</project>
+# ... (rest of the code)
