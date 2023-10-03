@@ -1,48 +1,70 @@
-import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QProgressBar, QWidget
-from PySide6.QtCore import QTimer
+	1.	Install Apache Airflow:
+You’ll need to install Apache Airflow first. You can install it using pip:
+
+pip install apache-airflow
+
+
+	2.	Initialize Airflow Database:
+Initialize the Airflow database where metadata about your workflows and tasks will be stored:
+
+airflow db init
+
+
+	3.	Create an Airflow DAG:
+Create a Python script to define your DAG. In this example, we’ll create a simple DAG that simulates running tasks:
+
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from datetime import datetime, timedelta
 import time
 
-class TaskRunner(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Task Progress")
-        self.setGeometry(100, 100, 400, 200)
-        
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+# Default args and DAG definition
+default_args = {
+    'owner': 'your_name',
+    'depends_on_past': False,
+    'start_date': datetime(2023, 1, 1),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
 
-        layout = QVBoxLayout()
+dag = DAG(
+    'task_progress_dag',
+    default_args=default_args,
+    description='A simple Airflow DAG to simulate task progress',
+    schedule_interval=None,  # You can specify a schedule here if needed
+)
 
-        self.progress_bar = QProgressBar()
-        layout.addWidget(self.progress_bar)
+# Define a Python function to simulate a task
+def simulate_task(task_id):
+    for i in range(10):
+        print(f"Running {task_id}, Progress: {i * 10}%")
+        time.sleep(1)
 
-        self.run_button = QPushButton("Run Tasks")
-        layout.addWidget(self.run_button)
+# Create task instances
+tasks = []
+for task_id in range(1, 11):
+    task = PythonOperator(
+        task_id=f'task_{task_id}',
+        python_callable=simulate_task,
+        op_args=[f'task_{task_id}'],
+        dag=dag,
+    )
+    tasks.append(task)
 
-        self.run_button.clicked.connect(self.run_tasks)
+# Set task dependencies (e.g., task_1 runs before task_2)
+for i in range(1, 10):
+    tasks[i] >> tasks[i + 1]
 
-        central_widget.setLayout(layout)
 
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_progress)
-        self.counter = 0
+	4.	Run Airflow Scheduler and Web UI:
+Start the Airflow Scheduler to begin scheduling and running your DAGs:
 
-    def run_tasks(self):
-        self.counter = 0
-        self.timer.start(1000)
+airflow scheduler
 
-    def update_progress(self):
-        self.counter += 10
-        self.progress_bar.setValue(self.counter)
-        if self.counter >= 100:
-            self.timer.stop()
+	4.	You can also start the Airflow Web UI to monitor and trigger DAG runs:
 
-def main():
-    app = QApplication(sys.argv)
-    window = TaskRunner()
-    window.show()
-    sys.exit(app.exec_())
+airflow webserver --port 8080
 
-if __name__ == "__main__":
-    main()
+
+	5.	Access Airflow Web UI:
+Access the Airflow Web UI in your browser by navigating to http://localhost:8080 (or the appropriate URL if you changed the port). You can trigger your task_progress_dag manually and monitor the progress of each task.
