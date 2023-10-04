@@ -1,5 +1,5 @@
 import sys
-import math  # Import the math module
+import math
 from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem
 from PyQt5.QtGui import QColor, QBrush, QPen
 from PyQt5.QtCore import Qt, QPointF, QLineF
@@ -38,7 +38,7 @@ def draw_arrow(scene, start_item, end_item):
         arrow_size * math.sin(angle_radians + math.radians(arrow_angle))
     )
 
-    arrow_head = scene.addPolygon([end_center, arrow_p1, arrow_p2])
+    arrow_head = scene.addPolygon(QPolygonF([end_center, arrow_p1, arrow_p2]))  # Use QPolygonF
     arrow_line = scene.addLine(line)
 
     arrow_head.setBrush(QBrush(Qt.black))
