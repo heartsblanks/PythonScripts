@@ -1,5 +1,4 @@
 import tkinter as tk
-import threading
 import time
 
 def migrate():
@@ -21,8 +20,7 @@ def migrate():
             stage_canvas.itemconfig(stage_text, text=f"Stage {stage} - Error", fill="red")
 
     for stage in range(1, 11):
-        t = threading.Thread(target=simulate_migration, args=(stage,))
-        t.start()
+        simulate_migration(stage)
 
 root = tk.Tk()
 root.title("Migration Progress")
