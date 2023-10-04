@@ -4,15 +4,21 @@ import time
 
 def migrate():
     def simulate_migration(stage):
-        canvas.itemconfig(stage_text, text=f"Stage {stage}")
+        progress = 0
+        stage_canvas = stage_canvases[stage]
+        stage_text = stage_texts[stage]
+
         for i in range(101):
-            canvas.coords(stage_bar, 10, 10, 10 + i, 30)
-            canvas.update()
+            progress = i
+            stage_canvas.coords(stage_bar, 10, 10, 10 + progress, 30)
+            stage_canvas.itemconfig(stage_text, text=f"Stage {stage} - {progress}%")
+            stage_canvas.update()
             time.sleep(0.01)
-        if stage == 10:
-            canvas.itemconfig(stage_text, text="Migration Completed", fill="green")
+
+        if progress == 100:
+            stage_canvas.itemconfig(stage_text, text=f"Stage {stage} - Completed", fill="green")
         else:
-            canvas.itemconfig(stage_text, text=f"Error in Stage {stage}", fill="red")
+            stage_canvas.itemconfig(stage_text, text=f"Stage {stage} - Error", fill="red")
 
     for stage in range(1, 11):
         t = threading.Thread(target=simulate_migration, args=(stage,))
@@ -21,11 +27,21 @@ def migrate():
 root = tk.Tk()
 root.title("Migration Progress")
 
-canvas = tk.Canvas(root, width=320, height=50)
-canvas.pack(pady=10)
+stage_canvases = []
+stage_texts = []
 
-stage_text = canvas.create_text(10, 35, anchor=tk.W, text="", font=("Helvetica", 10))
-stage_bar = canvas.create_rectangle(10, 10, 10, 30, fill="green")
+for stage in range(1, 11):
+    stage_frame = tk.Frame(root)
+    stage_frame.pack(pady=10)
+
+    stage_canvas = tk.Canvas(stage_frame, width=320, height=40)
+    stage_canvas.pack()
+
+    stage_text = stage_canvas.create_text(10, 20, anchor=tk.W, text=f"Stage {stage} - 0%")
+    stage_bar = stage_canvas.create_rectangle(10, 10, 10, 30, fill="green")
+
+    stage_canvases.append(stage_canvas)
+    stage_texts.append(stage_text)
 
 migrate_button = tk.Button(root, text="Migrate", command=migrate)
 migrate_button.pack(pady=10)
