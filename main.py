@@ -8,15 +8,17 @@ def simulate_migration(stage, stage_canvas, stage_text):
         progress.set(i)
         progress_width = i * 3
         stage_canvas.coords(stage_bar, 10, 10, 10 + progress_width, 30)
-        stage_text.set(f"Stage {stage} - {i}% - {'Completed' if i == 100 else 'In Progress'}")
+        stage_text.set(f"Stage {stage}")
+        percentage_text.set(f"{i}%")
+        status_text.set("Completed" if i == 100 else "In Progress")
         root.update_idletasks()
         time.sleep(0.01)
 
     if i == 100:
-        stage_text.set(f"Stage {stage} - Completed")
+        status_text.set("Completed")
         stage_canvas.itemconfig(stage_bar, fill="green")
     else:
-        stage_text.set(f"Stage {stage} - Error")
+        status_text.set("Error")
         stage_canvas.itemconfig(stage_bar, fill="red")
 
 def migrate(stage):
@@ -41,6 +43,14 @@ for stage in range(1, 11):
     stage_text = tk.StringVar()
     stage_label = tk.Label(stage_canvas, textvariable=stage_text, anchor=tk.W)
     stage_label.place(x=10, y=10)
+
+    percentage_text = tk.StringVar()
+    percentage_label = tk.Label(stage_canvas, textvariable=percentage_text, anchor=tk.W)
+    percentage_label.place(x=140, y=10)
+
+    status_text = tk.StringVar()
+    status_label = tk.Label(stage_canvas, textvariable=status_text, anchor=tk.W)
+    status_label.place(x=230, y=10)
 
     stage_bar = stage_canvas.create_rectangle(10, 10, 10, 30, fill="green")
 
