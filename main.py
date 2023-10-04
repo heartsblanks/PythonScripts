@@ -8,7 +8,7 @@ def simulate_migration(stage, stage_canvas, stage_text):
         progress.set(i)
         progress_width = i * 3
         stage_canvas.coords(stage_bar, 10, 10, 10 + progress_width, 30)
-        stage_text.set(f"Stage {stage} - {i}%")
+        stage_text.set(f"Stage {stage} - {i}% - {'Completed' if i == 100 else 'In Progress'}")
         root.update_idletasks()
         time.sleep(0.01)
 
