@@ -2,9 +2,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import time
 
-def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_text, progress_bar):
+def simulate_migration(stage, progress_bar, stage_text, percentage_text, status_text):
     for i in range(101):
-        stage_canvas.coords(stage_bar, 10, 10, 10 + (i / 100) * 300, 30)
         percentage_text.set(f"{i}%")
         status_text.set("Completed" if i == 100 else "In Progress")
         progress_bar["value"] = i
@@ -13,21 +12,22 @@ def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_
 
     if i == 100:
         status_text.set("Completed")
-        stage_canvas.itemconfig(stage_bar, fill="green")
+        progress_bar["style"] = "green.Horizontal.TProgressbar"
     else:
         status_text.set("Error")
-        stage_canvas.itemconfig(stage_bar, fill="red")
+        progress_bar["style"] = "red.Horizontal.TProgressbar"
 
-def migrate(stage, progress_bar):
+def migrate(stage):
     if stage > 10:
         return
-    simulate_migration(stage, stage_canvases[stage], stage_texts[stage], percentage_texts[stage], status_texts[stage], progress_bar)
-    root.after(10, migrate, stage + 1, progress_bar)
+    simulate_migration(stage, progress_bars[stage], stage_texts[stage], percentage_texts[stage], status_texts[stage])
+    root.after(10, migrate, stage + 1)
 
 root = tk.Tk()
 root.title("Migration Progress")
 
-stage_canvases = {}
+# Create dictionaries to store progress bars and text elements
+progress_bars = {}
 stage_texts = {}
 percentage_texts = {}
 status_texts = {}
@@ -48,25 +48,16 @@ for stage in range(1, 11):
     status_label = tk.Label(stage_frame, textvariable=status_text, anchor=tk.W)
     status_label.grid(row=0, column=2, padx=10)
 
-    stage_canvas = tk.Canvas(stage_frame, width=320, height=40)
-    stage_canvas.grid(row=0, column=3, padx=10)
+    progress_bar = ttk.Progressbar(stage_frame, orient="horizontal", length=320, mode="determinate")
+    progress_bar.grid(row=0, column=3, padx=10)
 
-    stage_bar = stage_canvas.create_rectangle(10, 10, 10, 30, fill="green")
-
-    stage_canvases[stage] = stage_canvas
+    progress_bars[stage] = progress_bar
     stage_texts[stage] = stage_text
     percentage_texts[stage] = percentage_text
     status_texts[stage] = status_text
 
-# Set all columns to have the same width (320 pixels)
-for col in range(4):  # Assuming you have 4 columns in each row
-    root.grid_columnconfigure(col, uniform="column", weight=1, minsize=320)
-
-# Create a progress bar in the status bar
-status_bar = ttk.Progressbar(root, mode="determinate", length=320)
-status_bar.grid(row=12, column=0, pady=10)
-
-migrate_button = tk.Button(root, text="Migrate", command=lambda: migrate(1, status_bar))
+# Create a button to start migration
+migrate_button = tk.Button(root, text="Migrate", command=lambda: migrate(1))
 migrate_button.grid(row=11, column=0, pady=10)
 
 root.mainloop()
