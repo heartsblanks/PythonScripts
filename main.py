@@ -1,43 +1,44 @@
-import tkinter as tk
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import time
 
-# Create a Tkinter window
-window = tk.Tk()
-window.title("Pipeline Progress Visualization")
+# Default args and DAG definition
+default_args = {
+    'owner': 'your_name',
+    'depends_on_past': False,
+    'start_date': datetime(2023, 1, 1),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
 
-# Create a canvas widget to draw the pipeline
-canvas = tk.Canvas(window, width=800, height=400)
-canvas.pack()
+dag = DAG(
+    'task_progress_dag',
+    default_args=default_args,
+    description='A simple Airflow DAG to simulate task progress',
+    schedule=None,  # You can specify a schedule here if needed
+)
 
-# Define the stages in the pipeline
-stages = ["Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5"]
+# Define a Python function to simulate a task
+def simulate_task(task_id):
+    for i in range(10):
+        print(f"Running {task_id}, Progress: {i * 10}%")
+        time.sleep(1)
 
-# Define the width and height of each stage box
-stage_width = 100
-stage_height = 50
+# Create task instances
+tasks = []
+for task_id in range(1, 11):
+    task = PythonOperator(
+        task_id=f'task_{task_id}',
+        python_callable=simulate_task,
+        op_args=[f'task_{task_id}'],
+        dag=dag,
+    )
+    tasks.append(task)
 
-# Define the spacing between stages
-spacing = 20
+# Set task dependencies (e.g., task_1 runs before task_2, and so on)
+for i in range(1, 10):
+    tasks[i] >> tasks[i + 1]
 
-# Define the progress for each stage (as a percentage)
-stage_progress = [20, 40, 60, 80, 100]
-
-# Calculate the total width of the pipeline
-total_width = len(stages) * (stage_width + spacing) - spacing
-
-# Draw the stages as rectangular boxes with progress bars
-for i, (stage, progress) in enumerate(zip(stages, stage_progress)):
-    x1 = (i * (stage_width + spacing)) + spacing  # Calculate x-coordinate of the stage box
-    y1 = 150  # Set a fixed y-coordinate for all stages
-    x2 = x1 + stage_width  # Calculate the x-coordinate of the right edge of the stage box
-    y2 = y1 + stage_height  # Calculate the y-coordinate of the bottom edge of the stage box
-    
-    # Draw the stage box
-    canvas.create_rectangle(x1, y1, x2, y2, fill="lightblue")
-    canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, text=stage)
-    
-    # Draw the progress bar
-    progress_x2 = x1 + (stage_width * progress / 100)
-    canvas.create_rectangle(x1, y1, progress_x2, y2, fill="green")
-
-# Run the Tkinter main loop
-window.mainloop()
+# Set the dependency for the first task
+tasks[0] >> tasks[1]
