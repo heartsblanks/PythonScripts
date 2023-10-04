@@ -1,7 +1,9 @@
 import tkinter as tk
+import tkinter.ttk as ttk
 import time
 
-def simulate_migration(stage, progress, stage_canvas, stage_text):
+def simulate_migration(stage, stage_canvas, stage_text):
+    progress = tk.IntVar()
     for i in range(101):
         progress.set(i)
         progress_width = i * 3
@@ -20,7 +22,7 @@ def simulate_migration(stage, progress, stage_canvas, stage_text):
 def migrate(stage):
     if stage > 10:
         return
-    simulate_migration(stage, stage_progress[stage], stage_canvases[stage], stage_texts[stage])
+    simulate_migration(stage, stage_canvases[stage], stage_texts[stage])
     root.after(10, migrate, stage + 1)
 
 root = tk.Tk()
