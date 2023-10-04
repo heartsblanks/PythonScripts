@@ -2,14 +2,12 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import time
 
-def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_text):
-    progress = tk.IntVar()
+def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_text, progress_bar):
     for i in range(101):
-        progress.set(i)
-        progress_width = (i / 100) * 320
-        stage_canvas.coords(stage_bar, progress_width, 10, 320, 30)
+        stage_canvas.coords(stage_bar, 10, 10, 10 + (i / 100) * 300, 30)
         percentage_text.set(f"{i}%")
         status_text.set("Completed" if i == 100 else "In Progress")
+        progress_bar["value"] = i
         root.update_idletasks()
         time.sleep(0.01)
 
@@ -20,11 +18,11 @@ def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_
         status_text.set("Error")
         stage_canvas.itemconfig(stage_bar, fill="red")
 
-def migrate(stage):
+def migrate(stage, progress_bar):
     if stage > 10:
         return
-    simulate_migration(stage, stage_canvases[stage], stage_texts[stage], percentage_texts[stage], status_texts[stage])
-    root.after(10, migrate, stage + 1)
+    simulate_migration(stage, stage_canvases[stage], stage_texts[stage], percentage_texts[stage], status_texts[stage], progress_bar)
+    root.after(10, migrate, stage + 1, progress_bar)
 
 root = tk.Tk()
 root.title("Migration Progress")
@@ -53,14 +51,22 @@ for stage in range(1, 11):
     stage_canvas = tk.Canvas(stage_frame, width=320, height=40)
     stage_canvas.grid(row=0, column=3, padx=10)
 
-    stage_bar = stage_canvas.create_rectangle(0, 10, 0, 30, fill="green")
+    stage_bar = stage_canvas.create_rectangle(10, 10, 10, 30, fill="green")
 
     stage_canvases[stage] = stage_canvas
     stage_texts[stage] = stage_text
     percentage_texts[stage] = percentage_text
     status_texts[stage] = status_text
 
-migrate_button = tk.Button(root, text="Migrate", command=lambda: migrate(1))
+# Set all columns to have the same width (320 pixels)
+for col in range(4):  # Assuming you have 4 columns in each row
+    root.grid_columnconfigure(col, uniform="column", weight=1, minsize=320)
+
+# Create a progress bar in the status bar
+status_bar = ttk.Progressbar(root, mode="determinate", length=320)
+status_bar.grid(row=12, column=0, pady=10)
+
+migrate_button = tk.Button(root, text="Migrate", command=lambda: migrate(1, status_bar))
 migrate_button.grid(row=11, column=0, pady=10)
 
 root.mainloop()
