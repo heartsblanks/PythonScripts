@@ -36,9 +36,6 @@ for task_id in range(1, 11):
     )
     tasks.append(task)
 
-# Set task dependencies (e.g., task_1 runs before task_2, and so on)
-for i in range(1, 10):
-    tasks[i] >> tasks[i + 1]
-
-# Set the dependency for the first task
-tasks[0] >> tasks[1]
+# Set task dependencies dynamically
+for i in range(1, len(tasks)):
+    tasks[i - 1] >> tasks[i]
