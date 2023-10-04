@@ -6,8 +6,8 @@ def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_
     progress = tk.IntVar()
     for i in range(101):
         progress.set(i)
-        progress_width = i * 3
-        stage_canvas.coords(stage_bar, 120 + progress_width, 10, 320, 30)
+        progress_width = (i / 100) * 320
+        stage_canvas.coords(stage_bar, progress_width, 10, 320, 30)
         percentage_text.set(f"{i}%")
         status_text.set("Completed" if i == 100 else "In Progress")
         root.update_idletasks()
@@ -53,7 +53,7 @@ for stage in range(1, 11):
     stage_canvas = tk.Canvas(stage_frame, width=320, height=40)
     stage_canvas.grid(row=0, column=3, padx=10)
 
-    stage_bar = stage_canvas.create_rectangle(120, 10, 120, 30, fill="green")
+    stage_bar = stage_canvas.create_rectangle(0, 10, 0, 30, fill="green")
 
     stage_canvases[stage] = stage_canvas
     stage_texts[stage] = stage_text
