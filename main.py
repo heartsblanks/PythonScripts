@@ -1,70 +1,43 @@
-	1.	Install Apache Airflow:
-You’ll need to install Apache Airflow first. You can install it using pip:
+import tkinter as tk
 
-pip install apache-airflow
+# Create a Tkinter window
+window = tk.Tk()
+window.title("Pipeline Progress Visualization")
 
+# Create a canvas widget to draw the pipeline
+canvas = tk.Canvas(window, width=800, height=400)
+canvas.pack()
 
-	2.	Initialize Airflow Database:
-Initialize the Airflow database where metadata about your workflows and tasks will be stored:
+# Define the stages in the pipeline
+stages = ["Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5"]
 
-airflow db init
+# Define the width and height of each stage box
+stage_width = 100
+stage_height = 50
 
+# Define the spacing between stages
+spacing = 20
 
-	3.	Create an Airflow DAG:
-Create a Python script to define your DAG. In this example, we’ll create a simple DAG that simulates running tasks:
+# Define the progress for each stage (as a percentage)
+stage_progress = [20, 40, 60, 80, 100]
 
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from datetime import datetime, timedelta
-import time
+# Calculate the total width of the pipeline
+total_width = len(stages) * (stage_width + spacing) - spacing
 
-# Default args and DAG definition
-default_args = {
-    'owner': 'your_name',
-    'depends_on_past': False,
-    'start_date': datetime(2023, 1, 1),
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-}
+# Draw the stages as rectangular boxes with progress bars
+for i, (stage, progress) in enumerate(zip(stages, stage_progress)):
+    x1 = (i * (stage_width + spacing)) + spacing  # Calculate x-coordinate of the stage box
+    y1 = 150  # Set a fixed y-coordinate for all stages
+    x2 = x1 + stage_width  # Calculate the x-coordinate of the right edge of the stage box
+    y2 = y1 + stage_height  # Calculate the y-coordinate of the bottom edge of the stage box
+    
+    # Draw the stage box
+    canvas.create_rectangle(x1, y1, x2, y2, fill="lightblue")
+    canvas.create_text((x1 + x2) / 2, (y1 + y2) / 2, text=stage)
+    
+    # Draw the progress bar
+    progress_x2 = x1 + (stage_width * progress / 100)
+    canvas.create_rectangle(x1, y1, progress_x2, y2, fill="green")
 
-dag = DAG(
-    'task_progress_dag',
-    default_args=default_args,
-    description='A simple Airflow DAG to simulate task progress',
-    schedule_interval=None,  # You can specify a schedule here if needed
-)
-
-# Define a Python function to simulate a task
-def simulate_task(task_id):
-    for i in range(10):
-        print(f"Running {task_id}, Progress: {i * 10}%")
-        time.sleep(1)
-
-# Create task instances
-tasks = []
-for task_id in range(1, 11):
-    task = PythonOperator(
-        task_id=f'task_{task_id}',
-        python_callable=simulate_task,
-        op_args=[f'task_{task_id}'],
-        dag=dag,
-    )
-    tasks.append(task)
-
-# Set task dependencies (e.g., task_1 runs before task_2)
-for i in range(1, 10):
-    tasks[i] >> tasks[i + 1]
-
-
-	4.	Run Airflow Scheduler and Web UI:
-Start the Airflow Scheduler to begin scheduling and running your DAGs:
-
-airflow scheduler
-
-	4.	You can also start the Airflow Web UI to monitor and trigger DAG runs:
-
-airflow webserver --port 8080
-
-
-	5.	Access Airflow Web UI:
-Access the Airflow Web UI in your browser by navigating to http://localhost:8080 (or the appropriate URL if you changed the port). You can trigger your task_progress_dag manually and monitor the progress of each task.
+# Run the Tkinter main loop
+window.mainloop()
