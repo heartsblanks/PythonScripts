@@ -40,7 +40,7 @@ for stage in range(1, 11):
     stage_frame.grid(row=stage, column=0, padx=10, pady=10, sticky="w")
 
     stage_canvas = tk.Canvas(stage_frame, width=320, height=40)
-    stage_canvas.grid(row=0, column=0, columnspan=4)
+    stage_canvas.grid(row=0, column=0, columnspan=3)  # Adjusted columnspan to 3
 
     stage_text = tk.StringVar()
     stage_label = tk.Label(stage_canvas, textvariable=stage_text, anchor=tk.W)
