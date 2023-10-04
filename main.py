@@ -19,8 +19,9 @@ def migrate():
         else:
             stage_canvas.itemconfig(stage_text, text=f"Stage {stage} - Error", fill="red")
 
-    for stage in range(1, 11):
-        simulate_migration(stage)
+        # Check if this is the last stage before trying to access the next stage
+        if stage < 10:
+            simulate_migration(stage + 1)
 
 root = tk.Tk()
 root.title("Migration Progress")
@@ -28,7 +29,7 @@ root.title("Migration Progress")
 stage_canvases = []
 stage_texts = []
 
-for stage in range(1, 11):
+for stage in range(11):
     stage_frame = tk.Frame(root)
     stage_frame.pack(pady=10)
 
@@ -41,7 +42,7 @@ for stage in range(1, 11):
     stage_canvases.append(stage_canvas)
     stage_texts.append(stage_text)
 
-migrate_button = tk.Button(root, text="Migrate", command=migrate)
+migrate_button = tk.Button(root, text="Migrate", command=lambda: simulate_migration(1))
 migrate_button.pack(pady=10)
 
 root.mainloop()
