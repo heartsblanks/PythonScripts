@@ -7,8 +7,7 @@ def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_
     for i in range(101):
         progress.set(i)
         progress_width = i * 3
-        stage_canvas.coords(stage_bar, progress_width, 10, 320, 30)
-        stage_text.set(f"Stage {stage}")
+        stage_canvas.coords(stage_bar, 120 + progress_width, 10, 320, 30)
         percentage_text.set(f"{i}%")
         status_text.set("Completed" if i == 100 else "In Progress")
         root.update_idletasks()
@@ -39,22 +38,22 @@ for stage in range(1, 11):
     stage_frame = tk.Frame(root)
     stage_frame.grid(row=stage, column=0, padx=10, pady=10, sticky="w")
 
-    stage_canvas = tk.Canvas(stage_frame, width=320, height=40)
-    stage_canvas.grid(row=0, column=1, columnspan=3)  # Adjusted column and columnspan
-
     stage_text = tk.StringVar()
-    stage_label = tk.Label(stage_canvas, textvariable=stage_text, anchor=tk.W)
+    stage_label = tk.Label(stage_frame, textvariable=stage_text, anchor=tk.W)
     stage_label.grid(row=0, column=0, padx=10)
 
     percentage_text = tk.StringVar()
-    percentage_label = tk.Label(stage_canvas, textvariable=percentage_text, anchor=tk.W)
+    percentage_label = tk.Label(stage_frame, textvariable=percentage_text, anchor=tk.W)
     percentage_label.grid(row=0, column=1, padx=10)
 
     status_text = tk.StringVar()
-    status_label = tk.Label(stage_canvas, textvariable=status_text, anchor=tk.W)
+    status_label = tk.Label(stage_frame, textvariable=status_text, anchor=tk.W)
     status_label.grid(row=0, column=2, padx=10)
 
-    stage_bar = stage_canvas.create_rectangle(0, 10, 0, 30, fill="green")
+    stage_canvas = tk.Canvas(stage_frame, width=320, height=40)
+    stage_canvas.grid(row=0, column=3, padx=10)
+
+    stage_bar = stage_canvas.create_rectangle(120, 10, 120, 30, fill="green")
 
     stage_canvases[stage] = stage_canvas
     stage_texts[stage] = stage_text
