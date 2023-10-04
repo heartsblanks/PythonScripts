@@ -2,7 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import time
 
-def simulate_migration(stage, stage_canvas, stage_text):
+def simulate_migration(stage, stage_canvas, stage_text, percentage_text, status_text):
     progress = tk.IntVar()
     for i in range(101):
         progress.set(i)
@@ -24,7 +24,7 @@ def simulate_migration(stage, stage_canvas, stage_text):
 def migrate(stage):
     if stage > 10:
         return
-    simulate_migration(stage, stage_canvases[stage], stage_texts[stage])
+    simulate_migration(stage, stage_canvases[stage], stage_texts[stage], percentage_texts[stage], status_texts[stage])
     root.after(10, migrate, stage + 1)
 
 root = tk.Tk()
@@ -32,6 +32,8 @@ root.title("Migration Progress")
 
 stage_canvases = {}
 stage_texts = {}
+percentage_texts = {}
+status_texts = {}
 
 for stage in range(1, 11):
     stage_frame = tk.Frame(root)
@@ -46,16 +48,18 @@ for stage in range(1, 11):
 
     percentage_text = tk.StringVar()
     percentage_label = tk.Label(stage_canvas, textvariable=percentage_text, anchor=tk.W)
-    percentage_label.place(x=140, y=10)
+    percentage_label.place(x=110, y=10)
 
     status_text = tk.StringVar()
     status_label = tk.Label(stage_canvas, textvariable=status_text, anchor=tk.W)
-    status_label.place(x=230, y=10)
+    status_label.place(x=210, y=10)
 
     stage_bar = stage_canvas.create_rectangle(10, 10, 10, 30, fill="green")
 
     stage_canvases[stage] = stage_canvas
     stage_texts[stage] = stage_text
+    percentage_texts[stage] = percentage_text
+    status_texts[stage] = status_text
 
 migrate_button = tk.Button(root, text="Migrate", command=lambda: migrate(1))
 migrate_button.pack(pady=10)
