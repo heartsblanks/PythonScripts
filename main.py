@@ -1,8 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem
-from PyQt5.QtGui import QColor, QBrush, QPen
-from PyQt5.QtCore import Qt, QPointF, QLineF, qDegreesToRadians, qCos, qSin
+from PyQt5.QtGui import QColor, QBrush, QPen, qDegreesToRadians, qCos, qSin
+from PyQt5.QtCore import Qt, QPointF, QLineF
 
+# Rest of the code remains the same...
 class StageItem(QGraphicsRectItem):
     def __init__(self, name, x, y, width, height):
         super().__init__(x, y, width, height)
