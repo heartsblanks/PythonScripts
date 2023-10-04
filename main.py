@@ -5,12 +5,13 @@ import threading
 
 def migrate():
     def simulate_migration(stage):
-        progress_var.set(0)
+        stage_progress_bars[stage].start()
         stage_label.config(text=f"Stage {stage}")
         for i in range(101):
             time.sleep(0.01)
-            progress_var.set(i)
+            stage_progress_bars[stage].step(1)
             root.update_idletasks()
+        stage_progress_bars[stage].stop()
         if stage == 10:
             stage_label.config(text="Migration Completed", fg="green")
         else:
@@ -23,9 +24,11 @@ def migrate():
 root = tk.Tk()
 root.title("Migration Progress")
 
-progress_var = tk.IntVar()
-progress_bar = ttk.Progressbar(root, mode="determinate", length=300, variable=progress_var)
-progress_bar.pack(pady=10)
+stage_progress_bars = []
+for _ in range(11):
+    progress_bar = ttk.Progressbar(root, mode="determinate", length=300)
+    stage_progress_bars.append(progress_bar)
+    progress_bar.pack(pady=5)
 
 stage_label = tk.Label(root, text="", pady=10)
 stage_label.pack()
