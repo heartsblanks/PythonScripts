@@ -1,50 +1,36 @@
-import sys
+import tkinter as tk
+from tkinter import ttk
 import time
-import multiprocessing
-from PyQt5.QtWidgets import QApplication, QMainWindow, QProgressBar, QPushButton
-from PyQt5.QtCore import QObject, pyqtSignal
+import threading
 
-class ProgressUpdater(QObject):
-    progress_updated = pyqtSignal(int)
+def migrate():
+    def simulate_migration(stage):
+        progress_var.set(0)
+        stage_label.config(text=f"Stage {stage}")
+        for i in range(101):
+            time.sleep(0.01)
+            progress_var.set(i)
+            root.update_idletasks()
+        if stage == 10:
+            stage_label.config(text="Migration Completed", fg="green")
+        else:
+            stage_label.config(text=f"Error in Stage {stage}", fg="red")
 
-    def update_progress(self, value):
-        self.progress_updated.emit(value)
+    for stage in range(1, 11):
+        t = threading.Thread(target=simulate_migration, args=(stage,))
+        t.start()
 
-def stage1(progress_updater):
-    for i in range(101):
-        time.sleep(0.05)
-        progress_updater.update_progress(i)
+root = tk.Tk()
+root.title("Migration Progress")
 
-def stage2(progress_updater):
-    for i in range(101):
-        time.sleep(0.03)
-        progress_updater.update_progress(i)
+progress_var = tk.IntVar()
+progress_bar = ttk.Progressbar(root, mode="determinate", length=300, variable=progress_var)
+progress_bar.pack(pady=10)
 
-def run_pipeline(progress_updater):
-    pool = multiprocessing.Pool(processes=2)
-    results = pool.map_async(stage1, [progress_updater])
-    results.get()
-    results = pool.map_async(stage2, [progress_updater])
-    results.get()
+stage_label = tk.Label(root, text="", pady=10)
+stage_label.pack()
 
-def main():
-    app = QApplication(sys.argv)
-    window = QMainWindow()
-    window.setGeometry(100, 100, 400, 200)
+migrate_button = tk.Button(root, text="Migrate", command=migrate)
+migrate_button.pack(pady=10)
 
-    progress_bar = QProgressBar(window)
-    progress_bar.setGeometry(50, 50, 300, 30)
-
-    start_button = QPushButton("Start Pipeline", window)
-    start_button.setGeometry(150, 100, 100, 30)
-
-    progress_updater = ProgressUpdater()
-    progress_updater.progress_updated.connect(progress_bar.setValue)
-
-    start_button.clicked.connect(lambda: run_pipeline(progress_updater))
-
-    window.show()
-    sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    main()
+root.mainloop()
