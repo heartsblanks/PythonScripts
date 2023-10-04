@@ -12,10 +12,10 @@ def simulate_migration(stage, progress, stage_canvas, stage_text):
 
     if progress.get() == 100:
         stage_text.set(f"Stage {stage} - Completed")
-        stage_canvas.itemconfig(stage_bar, fill="green")
+        stage_canvas.itemconfig("rect", fill="green")
     else:
         stage_text.set(f"Stage {stage} - Error")
-        stage_canvas.itemconfig(stage_bar, fill="red")
+        stage_canvas.itemconfig("rect", fill="red")
 
 def migrate():
     for stage in range(1, 11):
