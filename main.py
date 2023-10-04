@@ -11,38 +11,25 @@ class StageItem(QGraphicsRectItem):
         self.setBrush(QBrush(Qt.gray))
         self.setPen(QPen(Qt.black))
         self.successful = False
+        self.progress = 0  # Initialize progress to 0
 
     def set_success(self, success):
         self.successful = success
         self.setBrush(QBrush(Qt.green if success else Qt.red))
 
+    def set_progress(self, progress):
+        self.progress = progress
+        self.update()  # Call update to redraw the stage with updated progress
+
+    def paint(self, painter, option, widget=None):
+        super().paint(painter, option, widget)
+        # Draw a progress bar within the stage
+        progress_rect = self.rect()
+        progress_rect.setWidth(self.progress * self.rect().width() / 100)  # Adjust width based on progress
+        painter.fillRect(progress_rect, QBrush(Qt.green))
+
 def draw_arrow(scene, start_item, end_item):
-    start_center = start_item.rect().center()
-    end_center = end_item.rect().center()
-
-    line = QLineF(start_center, end_center)
-    angle = line.angle()
-
-    arrow_size = 10  # Size of the arrowhead
-    arrow_angle = 30  # Angle of the arrowhead
-
-    # Calculate rotated arrow points using math module
-    angle_radians = math.radians(angle)
-    arrow_p1 = end_center + QPointF(
-        arrow_size * math.cos(angle_radians - math.radians(arrow_angle)),
-        arrow_size * math.sin(angle_radians - math.radians(arrow_angle))
-    )
-
-    arrow_p2 = end_center + QPointF(
-        arrow_size * math.cos(angle_radians + math.radians(arrow_angle)),
-        arrow_size * math.sin(angle_radians + math.radians(arrow_angle))
-    )
-
-    arrow_head = scene.addPolygon(QPolygonF([end_center, arrow_p1, arrow_p2]))  # Use QPolygonF
-    arrow_line = scene.addLine(line)
-
-    arrow_head.setBrush(QBrush(Qt.black))
-    arrow_line.setPen(QPen(Qt.black))
+    # Rest of the code remains the same...
 
 def main():
     app = QApplication(sys.argv)
@@ -62,6 +49,10 @@ def main():
     # Simulate success/failure of stages
     stages[0].set_success(True)
     stages[1].set_success(False)
+
+    # Update progress for demonstration (you can replace this with your actual progress updates)
+    stages[0].set_progress(30)
+    stages[1].set_progress(70)
 
     # Draw arrows connecting stages
     draw_arrow(scene, stages[0], stages[1])
