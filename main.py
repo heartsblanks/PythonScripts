@@ -1,58 +1,40 @@
 import sys
-import subprocess
-import PyQt5.QtCore as QtCore
-import PyQt5.QtGui as QtGui
-import PyQt5.QtWidgets as QtWidgets
+import time
+import multiprocessing
+from PyQt5.QtWidgets import QApplication, QMainWindow, QProgressBar, QPushButton
 
-class PackageInstaller(QtWidgets.QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.init_ui()
-    
-    def init_ui(self):
-        self.setWindowTitle("Package Installer")
-        self.setGeometry(100, 100, 600, 400)
+def stage1(progress_bar):
+    for i in range(101):
+        time.sleep(0.05)
+        progress_bar.setValue(i)
 
-        # List widget to display package installation status
-        self.package_list = QtWidgets.QListWidget(self)
-        self.package_list.setGeometry(50, 50, 300, 200)
+def stage2(progress_bar):
+    for i in range(101):
+        time.sleep(0.03)
+        progress_bar.setValue(i)
 
-        # Progress bar
-        self.progress_bar = QtWidgets.QProgressBar(self)
-        self.progress_bar.setGeometry(50, 270, 300, 20)
+def run_pipeline(progress_bar):
+    # Create a multiprocessing pool
+    pool = multiprocessing.Pool(processes=2)
 
-        # Start installation button
-        self.start_button = QtWidgets.QPushButton("Start Installation", self)
-        self.start_button.setGeometry(50, 310, 120, 30)
-        self.start_button.clicked.connect(self.install_packages)
-
-    def install_packages(self):
-        packages_to_install = ["package1", "package2", "package3"]  # Replace with your package list
-        total_packages = len(packages_to_install)
-        successful_installs = 0
-
-        for package in packages_to_install:
-            try:
-                # Execute pip install command
-                result = subprocess.run(["pip", "install", package], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-
-                # Update list widget with success status
-                item = QtWidgets.QListWidgetItem(f"{package} - Installed", self.package_list)
-                item.setIcon(QtGui.QIcon("green_tick_icon.png"))  # Replace with your green tick icon path
-                successful_installs += 1
-
-            except subprocess.CalledProcessError as e:
-                # Update list widget with failure status
-                item = QtWidgets.QListWidgetItem(f"{package} - Failed to install", self.package_list)
-                item.setIcon(QtGui.QIcon("red_x_icon.png"))  # Replace with your red X icon path
-
-            # Update progress bar
-            progress_percent = (successful_installs / total_packages) * 100
-            self.progress_bar.setValue(progress_percent)
+    # Execute stages in parallel
+    results = pool.map_async(stage1, [progress_bar])
+    results.get()
+    results = pool.map_async(stage2, [progress_bar])
+    results.get()
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
-    window = PackageInstaller()
+    app = QApplication(sys.argv)
+    window = QMainWindow()
+    window.setGeometry(100, 100, 400, 200)
+
+    progress_bar = QProgressBar(window)
+    progress_bar.setGeometry(50, 50, 300, 30)
+
+    start_button = QPushButton("Start Pipeline", window)
+    start_button.setGeometry(150, 100, 100, 30)
+    start_button.clicked.connect(lambda: run_pipeline(progress_bar))
+
     window.show()
     sys.exit(app.exec_())
 
