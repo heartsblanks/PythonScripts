@@ -5,13 +5,16 @@ import threading
 
 def migrate():
     def simulate_migration(stage):
-        stage_progress_bars[stage].start()
+        current_progress_bar = stage_progress_bars[stage]
+        current_progress_bar.config(value=0)
+        current_progress_bar.step(1)
         stage_label.config(text=f"Stage {stage}")
         for i in range(101):
             time.sleep(0.01)
-            stage_progress_bars[stage].step(1)
+            current_progress_bar.step(1)
+            current_progress_bar["text"] = f"Stage {stage}"
             root.update_idletasks()
-        stage_progress_bars[stage].stop()
+        current_progress_bar["text"] = ""  # Clear the text when the stage is completed
         if stage == 10:
             stage_label.config(text="Migration Completed", fg="green")
         else:
