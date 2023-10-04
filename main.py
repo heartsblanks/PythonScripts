@@ -1,41 +1,50 @@
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
-import time
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsRectItem
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor
 
-# Default args and DAG definition
-default_args = {
-    'owner': 'your_name',
-    'depends_on_past': False,
-    'start_date': datetime(2023, 1, 1),
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-}
+class PipelineVisualization(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
 
-dag = DAG(
-    'task_progress_dag',
-    default_args=default_args,
-    description='A simple Airflow DAG to simulate task progress',
-    schedule=None,  # You can specify a schedule here if needed
-)
+    def initUI(self):
+        self.setGeometry(100, 100, 800, 400)
+        self.setWindowTitle('Jenkins-like Pipeline Visualization')
 
-# Define a Python function to simulate a task
-def simulate_task(task_id):
-    for i in range(10):
-        print(f"Running {task_id}, Progress: {i * 10}%")
-        time.sleep(1)
+        scene = QGraphicsScene(self)
+        view = QGraphicsView(scene, self)
+        view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        view.setSceneRect(0, 0, 800, 400)
 
-# Create task instances
-tasks = []
-for task_id in range(1, 11):
-    task = PythonOperator(
-        task_id=f'task_{task_id}',
-        python_callable=simulate_task,
-        op_args=[f'task_{task_id}'],
-        dag=dag,
-    )
-    tasks.append(task)
+        stages = [("Stage 1", 30), ("Stage 2", 60), ("Stage 3", 80)]
 
-# Set task dependencies dynamically
-for i in range(1, len(tasks)):
-    tasks[i - 1] >> tasks[i]
+        x = 50
+        y = 150
+        width = 100
+        height = 100
+
+        for stage, progress in stages:
+            item = QGraphicsRectItem(x, y, width, height)
+            item.setBrush(QColor(173, 216, 230))  # Light Blue
+            scene.addItem(item)
+
+            progress_item = QGraphicsRectItem(x, y + height - 10, (width * progress) / 100, 10)
+            progress_item.setBrush(QColor(0, 128, 0))  # Green
+            scene.addItem(progress_item)
+
+            scene.addText(stage).setPos(x + width / 2 - 20, y - 20)
+
+            x += width + 50
+
+        self.setCentralWidget(view)
+
+def main():
+    app = QApplication(sys.argv)
+    ex = PipelineVisualization()
+    ex.show()
+    sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()
