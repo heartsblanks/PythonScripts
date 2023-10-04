@@ -1,8 +1,9 @@
 import tkinter as tk
 import time
 
-def simulate_migration(stage, stage_canvas, stage_text):
+def simulate_migration(stage, progress, stage_canvas, stage_text):
     for i in range(101):
+        progress.set(i)
         progress_width = i * 3
         stage_canvas.coords(stage_bar, 10, 10, 10 + progress_width, 30)
         stage_text.set(f"Stage {stage} - {i}%")
@@ -16,9 +17,11 @@ def simulate_migration(stage, stage_canvas, stage_text):
         stage_text.set(f"Stage {stage} - Error")
         stage_canvas.itemconfig(stage_bar, fill="red")
 
-def migrate():
-    for stage in range(1, 11):
-        simulate_migration(stage, stage_canvases[stage], stage_texts[stage])
+def migrate(stage):
+    if stage > 10:
+        return
+    simulate_migration(stage, stage_progress[stage], stage_canvases[stage], stage_texts[stage])
+    root.after(10, migrate, stage + 1)
 
 root = tk.Tk()
 root.title("Migration Progress")
@@ -42,7 +45,7 @@ for stage in range(1, 11):
     stage_canvases[stage] = stage_canvas
     stage_texts[stage] = stage_text
 
-migrate_button = tk.Button(root, text="Migrate", command=migrate)
+migrate_button = tk.Button(root, text="Migrate", command=lambda: migrate(1))
 migrate_button.pack(pady=10)
 
 root.mainloop()
