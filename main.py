@@ -1,50 +1,62 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsView, QGraphicsScene, QGraphicsRectItem
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem
+from PyQt5.QtGui import QColor, QBrush, QPen
+from PyQt5.QtCore import Qt, QPointF, QLineF
 
-class PipelineVisualization(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
+class StageItem(QGraphicsRectItem):
+    def __init__(self, name, x, y, width, height):
+        super().__init__(x, y, width, height)
+        self.name = name
+        self.setBrush(QBrush(Qt.gray))
+        self.setPen(QPen(Qt.black))
+        self.successful = False
 
-    def initUI(self):
-        self.setGeometry(100, 100, 800, 400)
-        self.setWindowTitle('Jenkins-like Pipeline Visualization')
+    def set_success(self, success):
+        self.successful = success
+        self.setBrush(QBrush(Qt.green if success else Qt.red))
 
-        scene = QGraphicsScene(self)
-        view = QGraphicsView(scene, self)
-        view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        view.setSceneRect(0, 0, 800, 400)
+def draw_arrow(scene, start_item, end_item):
+    start_center = start_item.rect().center()
+    end_center = end_item.rect().center()
 
-        stages = [("Stage 1", 30), ("Stage 2", 60), ("Stage 3", 80)]
+    line = QLineF(start_center, end_center)
+    angle = line.angle()
 
-        x = 50
-        y = 150
-        width = 100
-        height = 100
+    arrow_size = 10  # Size of the arrowhead
+    arrow_p1 = end_center + QPointF(arrow_size * 2, 0).rotate(angle - 30)
+    arrow_p2 = end_center + QPointF(arrow_size * 2, 0).rotate(angle + 30)
 
-        for stage, progress in stages:
-            item = QGraphicsRectItem(x, y, width, height)
-            item.setBrush(QColor(173, 216, 230))  # Light Blue
-            scene.addItem(item)
+    arrow_head = scene.addPolygon([end_center, arrow_p1, arrow_p2])
+    arrow_line = scene.addLine(line)
 
-            progress_item = QGraphicsRectItem(x, y + height - 10, (width * progress) / 100, 10)
-            progress_item.setBrush(QColor(0, 128, 0))  # Green
-            scene.addItem(progress_item)
-
-            scene.addText(stage).setPos(x + width / 2 - 20, y - 20)
-
-            x += width + 50
-
-        self.setCentralWidget(view)
-
+    arrow_head.setBrush(QBrush(Qt.black))
+    arrow_line.setPen(QPen(Qt.black))
+    
 def main():
     app = QApplication(sys.argv)
-    ex = PipelineVisualization()
-    ex.show()
+    window = QMainWindow()
+    scene = QGraphicsScene()
+    view = QGraphicsView(scene)
+
+    stages = [
+        StageItem("Stage 1", 10, 10, 100, 50),
+        StageItem("Stage 2", 150, 10, 100, 50),
+        # Add more stages as needed
+    ]
+
+    for stage in stages:
+        scene.addItem(stage)
+
+    # Simulate success/failure of stages
+    stages[0].set_success(True)
+    stages[1].set_success(False)
+
+    # Draw arrows connecting stages
+    draw_arrow(scene, stages[0], stages[1])
+    # Add more arrows as needed
+
+    view.show()
     sys.exit(app.exec_())
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
