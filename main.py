@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsRectItem
 from PyQt5.QtGui import QColor, QBrush, QPen
-from PyQt5.QtCore import Qt, QPointF, QLineF, QTransform
+from PyQt5.QtCore import Qt, QPointF, QLineF, qDegreesToRadians, qCos, qSin
 
 class StageItem(QGraphicsRectItem):
     def __init__(self, name, x, y, width, height):
@@ -23,10 +23,18 @@ def draw_arrow(scene, start_item, end_item):
     angle = line.angle()
 
     arrow_size = 10  # Size of the arrowhead
+    arrow_angle = 30  # Angle of the arrowhead
 
     # Calculate rotated arrow points
-    arrow_p1 = end_center + QTransform().rotate(angle - 30).map(QPointF(arrow_size * 2, 0))
-    arrow_p2 = end_center + QTransform().rotate(angle + 30).map(QPointF(arrow_size * 2, 0))
+    arrow_p1 = end_center + QPointF(
+        arrow_size * qCos(qDegreesToRadians(angle - arrow_angle)),
+        arrow_size * qSin(qDegreesToRadians(angle - arrow_angle))
+    )
+    
+    arrow_p2 = end_center + QPointF(
+        arrow_size * qCos(qDegreesToRadians(angle + arrow_angle)),
+        arrow_size * qSin(qDegreesToRadians(angle + arrow_angle))
+    )
 
     arrow_head = scene.addPolygon([end_center, arrow_p1, arrow_p2])
     arrow_line = scene.addLine(line)
