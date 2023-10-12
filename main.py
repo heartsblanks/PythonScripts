@@ -14,17 +14,25 @@ def update_xml_with_missing_elements(source_file, dest_file, parent_tags):
     # Traverse the dictionaries using the specified parent tags
     source_parent = source_dict
     dest_parent = dest_dict
+
     for tag in parent_tags:
         source_parent = source_parent.get(tag, {})
         dest_parent = dest_parent.get(tag, {})
 
-    # Create a set of existing element names in the destination XML
-    dest_element_names = {elem['@id'] for elem in dest_parent if isinstance(dest_parent, list) for elem in dest_parent}
+    if isinstance(dest_parent, list):
+        # Create a set of existing elements in the destination XML
+        dest_element_set = set(xmltodict.PrettyDict(element) for element in dest_parent)
 
-    # Check and add missing elements to the destination XML
-    for source_element in source_parent:
-        if source_element['@id'] not in dest_element_names:
-            dest_parent.append(source_element)
+        # Check and add missing elements to the destination XML
+        for source_element in source_parent:
+            if xmltodict.PrettyDict(source_element) not in dest_element_set:
+                dest_parent.append(source_element)
+    elif isinstance(dest_parent, dict):
+        # In this case, we assume there's only one element under the parent tag
+        source_element = source_parent
+        dest_element = dest_parent
+        if xmltodict.PrettyDict(source_element) != xmltodict.PrettyDict(dest_element):
+            dest_parent = source_element
 
     # Write the updated destination XML back to the file
     with open(dest_file, "w") as dest_xml:
