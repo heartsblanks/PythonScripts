@@ -1,33 +1,42 @@
-import tkinter as tk
 import subprocess
+import tkinter as tk
 
-def run_command():
-    # Create a new Tkinter window
+def run_maven_command():
+    # Replace 'your_maven_command' with your actual Maven command
+    maven_command = 'your_maven_command'
+    
+    # Create a new subprocess and open a pipe to its standard output
+    process = subprocess.Popen(maven_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    
+    # Create a Tkinter window
     window = tk.Tk()
-    window.title("Command Prompt")
-
-    # Create a Text widget to display the command output
+    window.title("Maven Command Output")
+    
+    # Create a Text widget to display the command output with monospaced font
     output_text = tk.Text(window, wrap=tk.WORD, font=("Courier New", 10))
     output_text.pack()
-
-    # Create an Entry widget for entering commands
-    command_entry = tk.Entry(window)
-    command_entry.pack()
-
-    def execute_command():
-        command = command_entry.get()
-        if command:
-            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            for line in process.stdout:
-                output_text.insert(tk.END, line)
-                output_text.see(tk.END)  # Auto-scroll to the end of the Text widget
-            command_entry.delete(0, tk.END)  # Clear the Entry widget
-
-    # Create a button to execute the command
-    execute_button = tk.Button(window, text="Execute Command", command=execute_command)
-    execute_button.pack()
-
+    
+    # Configure background and foreground colors
+    output_text.config(bg="black", fg="white")
+    
+    # Create a function to update the Text widget in real-time
+    def update_output():
+        line = process.stdout.readline()
+        if line:
+            output_text.insert(tk.END, line)
+            output_text.see(tk.END)  # Auto-scroll to the end of the Text widget
+            window.after(10, update_output)  # Schedule the function to run again
+        else:
+            # Command has finished, disable the button
+            run_button.config(state=tk.DISABLED)
+    
+    # Create a button to trigger the Maven command
+    run_button = tk.Button(window, text="Run Maven Command", command=update_output)
+    run_button.pack()
+    
+    update_output()  # Start the real-time update
+    
     window.mainloop()
 
-# Run the command prompt when the script starts
-run_command()
+# Run the Maven command when the script starts
+run_maven_command()
