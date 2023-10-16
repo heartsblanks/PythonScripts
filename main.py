@@ -24,10 +24,11 @@ def install_package(package_name):
     subprocess.run(["pip", "install", package_name])
 
 def process_python_file(file_path):
-    for package_name in get_imports(file_path):
-        if not is_package_installed(package_name):
-            print(f"{package_name} is not installed. Installing...")
-            install_package(package_name)
+    for item in get_imports(file_path):
+        # Check if it's a package, and if not, try to install it
+        if not is_package_installed(item):
+            print(f"{item} is not installed. Installing...")
+            install_package(item)
 
 directory_path = '/your/directory/path'
 
