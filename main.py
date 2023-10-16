@@ -44,9 +44,11 @@ for testcase in root.iter('testcase'):
 
     # If the test case exists, update its status, error message, and date
     if test_case_exists:
-        status_cell.value = "Failed" if failure_element is not None else ("Error" if error_element is not None else "Passed")
+        new_status = "Failed" if failure_element is not None else ("Error" if error_element is not None else "Passed")
+        if new_status != status_cell.value:
+            previous_status_cell.value = status_cell.value
+            status_cell.value = new_status
         error_message_cell.value = failure_element.attrib.get('message') if failure_element is not None else (error_element.attrib.get('message') if error_element is not None else '')
-        previous_status_cell.value = previous_status_cell.value if previous_status_cell.value else status_cell.value
         updated_date_cell.value = datetime.now()
         time_taken_cell.value = testcase.attrib.get('time', '')
 
