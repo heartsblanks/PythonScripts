@@ -1,42 +1,42 @@
+import os
 import subprocess
-import tkinter as tk
+import ast
+import concurrent.futures
 
-def run_maven_command():
-    # Replace 'your_maven_command' with your actual Maven command
-    maven_command = 'your_maven_command'
-    
-    # Create a new subprocess and open a pipe to its standard output
-    process = subprocess.Popen(maven_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    
-    # Create a Tkinter window
-    window = tk.Tk()
-    window.title("Maven Command Output")
-    
-    # Create a Text widget to display the command output with monospaced font
-    output_text = tk.Text(window, wrap=tk.WORD, font=("Courier New", 10))
-    output_text.pack()
-    
-    # Configure background and foreground colors
-    output_text.config(bg="black", fg="white")
-    
-    # Create a function to update the Text widget in real-time
-    def update_output():
-        line = process.stdout.readline()
-        if line:
-            output_text.insert(tk.END, line)
-            output_text.see(tk.END)  # Auto-scroll to the end of the Text widget
-            window.after(10, update_output)  # Schedule the function to run again
-        else:
-            # Command has finished, disable the button
-            run_button.config(state=tk.DISABLED)
-    
-    # Create a button to trigger the Maven command
-    run_button = tk.Button(window, text="Run Maven Command", command=update_output)
-    run_button.pack()
-    
-    update_output()  # Start the real-time update
-    
-    window.mainloop()
+def get_imports(file_path):
+    with open(file_path, 'r') as file:
+        tree = ast.parse(file.read())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for n in node.names:
+                yield n.name
+        if isinstance(node, ast.ImportFrom):
+            yield node.module
 
-# Run the Maven command when the script starts
-run_maven_command()
+def is_package_installed(package_name):
+    try:
+        __import__(package_name)
+        return True
+    except ImportError:
+        return False
+
+def install_package(package_name):
+    subprocess.run(["pip", "install", package_name])
+
+def process_python_file(file_path):
+    for package_name in get_imports(file_path):
+        if not is_package_installed(package_name):
+            print(f"{package_name} is not installed. Installing...")
+            install_package(package_name)
+
+directory_path = '/your/directory/path'
+
+# Specify the number of concurrent workers
+num_workers = 4
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+    for root, _, files in os.walk(directory_path):
+        for file in files:
+            if file.endswith('.py'):
+                file_path = os.path.join(root, file)
+                executor.submit(process_python_file, file_path)
