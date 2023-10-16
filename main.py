@@ -50,7 +50,7 @@ for testcase in root.iter('testcase'):
         updated_date_cell.value = datetime.now()
         time_taken_cell.value = testcase.attrib.get('time', '')
 
-        # Apply conditional formatting for the "Status" column
+        # Reapply conditional formatting for the "Status" column
         if status_cell.value == "Failed":
             status_cell.fill = failed_fill
         elif status_cell.value == "Error":
