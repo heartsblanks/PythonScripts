@@ -1,22 +1,50 @@
-import subprocess
 import tkinter as tk
+import threading
+import subprocess
+from Maven import execute_maven_command
 
-def execute_maven_command(maven_command, frame, callback):
-    process = subprocess.Popen(maven_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+def on_command_completion(return_code):
+    if return_code == 0:
+        print(f"Maven command completed successfully with return code {return_code}")
+        # Call the next function or perform other actions here
+    else:
+        print(f"Maven command failed with return code {return_code}")
 
-    output_text = tk.Text(frame, wrap=tk.WORD, font=("Courier New", 10))
-    output_text.pack()
-    output_text.config(bg="black", fg="white")
+root = tk.Tk()
+root.title("Maven Command Runner")
 
-    def update_output():
-        line = process.stdout.readline()
-        if line:
-            output_text.insert(tk.END, line)
-            output_text.see(tk.END)
-            frame.after(1, update_output)
-        else:
-            return_code = process.wait()
-            callback(return_code == 0, return_code)
-            output_text.config(state=tk.DISABLED)
+# Create a frame within the main window to display the Maven command output
+output_frame = tk.Frame(root)
+output_frame.pack()
 
-    update_output()
+# Create a button to trigger the Maven command execution
+button = tk.Button(root, text="Run Maven Command", command=lambda: execute_maven_command(output_frame, on_command_completion))
+button.pack()
+
+root.mainloop()
+import threading
+import subprocess
+
+def execute_maven_command(frame, callback):
+    def run_maven():
+        nonlocal return_code
+        process = subprocess.Popen('your_maven_command', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        output = process.communicate()[0]
+        return_code = process.returncode
+
+        # Signal that the Maven command is complete
+        maven_completed.set()
+
+    return_code = None
+    maven_completed = threading.Event()
+
+    # Create a new thread to execute the Maven command
+    maven_thread = threading.Thread(target=run_maven)
+    maven_thread.start()
+
+    print("Before executing Maven command")
+
+    # Wait for the Maven command to complete
+    maven_completed.wait()
+
+    callback(return_code)
