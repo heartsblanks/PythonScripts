@@ -1,15 +1,12 @@
 import subprocess
 import tkinter as tk
 
-def run_maven_command():
-    # Replace 'your_maven_command' with your actual Maven command
-    maven_command = 'your_maven_command'
-    
+def run_maven_command(maven_command, master):
     # Create a new subprocess and open a pipe to its standard output
     process = subprocess.Popen(maven_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     
     # Create a Tkinter window
-    window = tk.Tk()
+    window = tk.Toplevel(master)
     window.title("Maven Command Output")
     
     # Create a Text widget to display the command output with monospaced font
@@ -42,8 +39,16 @@ def run_maven_command():
     run_button.pack()
     
     update_output()  # Start the real-time update
-    
-    window.mainloop()
 
-# Run the Maven command when the script starts
-run_maven_command()
+# Example usage:
+root = tk.Tk()
+root.title("Maven Command Runner")
+
+# Replace 'your_maven_command' with the actual Maven command
+maven_command = 'your_maven_command'
+
+# Pass the Maven command and the master window to the function
+run_maven_command(maven_command, root)
+
+# Start the Tkinter main loop
+root.mainloop()
