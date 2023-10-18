@@ -1,6 +1,4 @@
 import tkinter as tk
-import threading
-import subprocess
 from Maven import execute_maven_command
 
 def on_command_completion(return_code):
@@ -17,19 +15,31 @@ root.title("Maven Command Runner")
 output_frame = tk.Frame(root)
 output_frame.pack()
 
+# Create a text widget within the output frame to display the command output
+output_text = tk.Text(output_frame, wrap=tk.WORD)
+output_text.pack()
+output_text.config(bg="black", fg="white")
+
 # Create a button to trigger the Maven command execution
-button = tk.Button(root, text="Run Maven Command", command=lambda: execute_maven_command(output_frame, on_command_completion))
+button = tk.Button(root, text="Run Maven Command", command=lambda: execute_maven_command(output_text, on_command_completion))
 button.pack()
 
 root.mainloop()
+
 import threading
 import subprocess
 
-def execute_maven_command(frame, callback):
+def execute_maven_command(output_text, callback):
     def run_maven():
         nonlocal return_code
         process = subprocess.Popen('your_maven_command', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        output = process.communicate()[0]
+
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break  # End of output
+            output_text.insert('end', line)
+            output_text.see('end')  # Auto-scroll to the end of the Text widget
         return_code = process.returncode
 
         # Signal that the Maven command is complete
@@ -42,9 +52,6 @@ def execute_maven_command(frame, callback):
     maven_thread = threading.Thread(target=run_maven)
     maven_thread.start()
 
-    print("Before executing Maven command")
-
-    # Wait for the Maven command to complete
-    maven_completed.wait()
+    maven_thread.join()  # Wait for the Maven thread to complete
 
     callback(return_code)
