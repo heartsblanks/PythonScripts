@@ -34,28 +34,46 @@ for connection in message_flow_data['ecore:EPackage']['eClassifiers']['compositi
     else:
         source_connections[source_node] = [connection]
 
-# Arrange connections for each source node
+# Arrange connections for each source node, considering connections from HTTP input
 for source_node, connections in source_connections.items():
     x_position = node_positions[source_node][0]
     y_position = node_positions[source_node][1]
 
-    # Collect connections to the same target node
-    same_target_connections = [conn for conn in connections if conn['@targetNode'] == connections[0]['@targetNode']]
+    # Check if the source_node is HTTP Input
+    if 'ComIbmWSInput.msgnode' in source_node:
+        # Collect all connections from HTTP Input
+        http_input_connections = [conn for conn in connections if 'ComIbmWSInput.msgnode' in conn['@sourceNode']]
 
-    if len(same_target_connections) > 1:
-        x_offset_multiplier = 1
-        for connection in same_target_connections:
+        # Sort the HTTP Input connections based on the order you specified (above, right, right, below)
+        http_input_connections = sorted(http_input_connections, key=lambda conn: conn['@sourceTerminalName'])
+
+        # Initialize y_offset_multiplier for placing connections
+        y_offset_multiplier = 1
+
+        for connection in http_input_connections:
             target_node = connection['@targetNode']
-            x_position = node_positions[source_node][0] + x_offset * x_offset_multiplier
-            y_position = node_positions[source_node][1]
-            node_positions[target_node] = (x_position, y_position)
-            x_offset_multiplier += 1
+            new_position = (x_position + x_offset * y_offset_multiplier, y_position)
+            node_positions[target_node] = new_position
+            y_offset_multiplier += 1
+
     else:
-        for connection in connections:
-            target_node = connection['@targetNode']
-            x_position = node_positions[source_node][0]
-            y_position = node_positions[source_node][1]
-            node_positions[target_node] = (x_position, y_position - y_offset)
+        # Collect connections to the same target node
+        same_target_connections = [conn for conn in connections if conn['@targetNode'] == connections[0]['@targetNode']]
+
+        if len(same_target_connections) > 1:
+            x_offset_multiplier = 1
+            for connection in same_target_connections:
+                target_node = connection['@targetNode']
+                x_position = node_positions[source_node][0] + x_offset * x_offset_multiplier
+                y_position = node_positions[source_node][1]
+                node_positions[target_node] = (x_position, y_position)
+                x_offset_multiplier += 1
+        else:
+            for connection in connections:
+                target_node = connection['@targetNode']
+                x_position = node_positions[source_node][0]
+                y_position = node_positions[source_node][1]
+                node_positions[target_node] = (x_position, y_position - y_offset)
 
 # Update node locations in the XML
 for node in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['nodes']:
