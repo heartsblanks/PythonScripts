@@ -33,7 +33,14 @@ for connection in message_flow_data['ecore:EPackage']['eClassifiers']['compositi
     else:
         source_connections[source_node] = [connection]
 
-# Arrange connections for each source node
+# Function to check if a node position overlaps with existing nodes
+def is_overlapping(position, existing_positions):
+    for pos in existing_positions:
+        if abs(pos[0] - position[0]) <= 30 and abs(pos[1] - position[1]) <= 30:
+            return True
+    return False
+
+# Arrange connections for each source node while avoiding overlaps
 for source_node, connections in source_connections.items():
     x_position = node_positions[source_node][0]
     y_position = node_positions[source_node][1]
@@ -45,17 +52,18 @@ for source_node, connections in source_connections.items():
         y_offset_multiplier = 1
         for connection in same_target_connections:
             target_node = connection['@targetNode']
-            node_positions[target_node] = (x_position, y_position)
-            y_position -= y_offset * y_offset_multiplier
+            new_position = (x_position + x_offset * y_offset_multiplier, y_position)
+            while is_overlapping(new_position, list(node_positions.values())):
+                new_position = (new_position[0], new_position[1] + y_offset)
+            node_positions[target_node] = new_position
             y_offset_multiplier += 1
     else:
         for connection in connections:
             target_node = connection['@targetNode']
-            if x_position != node_positions[target_node][0]:
-                x_position = node_positions[target_node][0]
-            else:
-                y_position -= y_offset
-            node_positions[target_node] = (x_position, y_position)
+            new_position = (x_position, y_position)
+            while is_overlapping(new_position, list(node_positions.values())):
+                new_position = (new_position[0], new_position[1] + y_offset)
+            node_positions[target_node] = new_position
 
 # Update node locations in the XML
 for node in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['nodes']:
