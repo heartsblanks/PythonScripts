@@ -2,7 +2,7 @@ import xmltodict
 
 # Parse the XML using xmltodict
 with open("your_message_flow.xml", "r") as xml_file:
-    xml_data = xml_file read()
+    xml_data = xml_file.read()
     message_flow_data = xmltodict.parse(xml_data)
 
 # Create a dictionary to store node positions
@@ -41,7 +41,6 @@ for source_node, connections in source_connections.items():
     # Collect connections to the same target node
     same_target_connections = [conn for conn in connections if conn['@targetNode'] == connections[0]['@targetNode']]
 
-    # If there are multiple connections to the same target, arrange them together
     if len(same_target_connections) > 1:
         y_offset_multiplier = 1
         for connection in same_target_connections:
@@ -53,7 +52,7 @@ for source_node, connections in source_connections.items():
         for connection in connections:
             target_node = connection['@targetNode']
             if x_position != node_positions[target_node][0]:
-                x_position = node_positions[target_node][0]
+                x_position = node_positions[target_node][0] + x_offset  # Adjust the x-position for multiple connections
             else:
                 y_position -= y_offset
             node_positions[target_node] = (x_position, y_position)
