@@ -45,14 +45,13 @@ for source_node, connections in source_connections.items():
         y_offset_multiplier = 1
         for connection in same_target_connections:
             target_node = connection['@targetNode']
-            node_positions[target_node] = (x_position, y_position)
-            y_position -= y_offset * y_offset_multiplier
+            node_positions[target_node] = (x_position + x_offset * y_offset_multiplier, y_position)
             y_offset_multiplier += 1
     else:
         for connection in connections:
             target_node = connection['@targetNode']
             if x_position != node_positions[target_node][0]:
-                x_position = node_positions[target_node][0] + x_offset  # Adjust the x-position for multiple connections
+                x_position = node_positions[target_node][0] + x_offset
             else:
                 y_position -= y_offset
             node_positions[target_node] = (x_position, y_position)
