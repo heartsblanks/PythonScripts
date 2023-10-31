@@ -9,22 +9,34 @@ with open("your_message_flow.xml", "r") as xml_file:
 node_positions = {}
 
 # Analyze connections and calculate node positions
-y_offset = 50  # Vertical offset between nodes
-current_x = 50  # Initial horizontal position
+x_offset = 150  # Horizontal offset between nodes
+y_offset = 100  # Vertical offset for multiple connections
+current_y = 100  # Initial vertical position
 
 for connection in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['connections']:
     source_node = connection['@sourceNode']
     target_node = connection['@targetNode']
 
-    # If the source node is not in the dictionary, add it at the current position
     if source_node not in node_positions:
-        node_positions[source_node] = (current_x, 0)
-        current_x += 150  # Adjust horizontal spacing
+        node_positions[source_node] = (0, current_y)
+        current_y += 100  # Adjust vertical spacing for single connections
 
-    # If the target node is not in the dictionary, add it below the source node
     if target_node not in node_positions:
-        y_position = node_positions[source_node][1] - y_offset
-        node_positions[target_node] = (node_positions[source_node][0], y_position)
+        x_position = node_positions[source_node][0] + x_offset
+        node_positions[target_node] = (x_position, node_positions[source_node][1])
+    else:
+        existing_targets = [t for t in node_positions if node_positions[t][1] < node_positions[source_node][1]]
+        num_existing_targets = len(existing_targets)
+        if num_existing_targets == 0:
+            x_position = node_positions[source_node][0] + x_offset
+            y_position = node_positions[source_node][1] - y_offset
+        elif num_existing_targets == 1:
+            x_position = node_positions[source_node][0] + x_offset
+            y_position = node_positions[source_node][1] + y_offset
+        else:
+            x_position = node_positions[source_node][0] + (num_existing_targets - 1) * x_offset
+            y_position = node_positions[source_node][1] - y_offset
+        node_positions[target_node] = (x_position, y_position)
 
 # Update node locations in the XML
 for node in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['nodes']:
