@@ -25,17 +25,24 @@ for connection in message_flow_data['ecore:EPackage']['eClassifiers']['compositi
         x_position = node_positions[source_node][0] + x_offset
         node_positions[target_node] = (x_position, node_positions[source_node][1])
     else:
-        existing_targets = [t for t in node_positions if node_positions[t][1] < node_positions[source_node][1]]
-        num_existing_targets = len(existing_targets)
-        if num_existing_targets == 0:
-            x_position = node_positions[source_node][0] + x_offset
-            y_position = node_positions[source_node][1] - y_offset
-        elif num_existing_targets == 1:
-            x_position = node_positions[source_node][0] + x_offset
-            y_position = node_positions[source_node][1] + y_offset
+        # Check if all connections are to the same target node
+        same_target = all(target_node == conn['@targetNode'] for conn in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['connections'] if conn['@sourceNode'] == source_node)
+        if same_target:
+            x_position = node_positions[target_node][0] + x_offset
+            y_position = node_positions[target_node][1]
         else:
-            x_position = node_positions[source_node][0] + (num_existing_targets - 1) * x_offset
-            y_position = node_positions[source_node][1] - y_offset
+            existing_targets = [t for t in node_positions if node_positions[t][1] < node_positions[source_node][1]]
+            num_existing_targets = len(existing_targets)
+            if num_existing_targets == 0:
+                x_position = node_positions[source_node][0] + x_offset
+                y_position = node_positions[source_node][1] - y_offset
+            elif num_existing_targets == 1:
+                x_position = node_positions[source_node][0] + x_offset
+                y_position = node_positions[source_node][1] + y_offset
+            else:
+                x_position = node_positions[source_node][0] + (num_existing_targets - 1) * x_offset
+                y_position = node_positions[source_node][1] - y_offset
+
         node_positions[target_node] = (x_position, y_position)
 
 # Update node locations in the XML
