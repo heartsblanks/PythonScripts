@@ -1,33 +1,40 @@
 import xmltodict
-import matplotlib.pyplot as plt
 
 # Parse the XML using xmltodict
 with open("your_message_flow.xml", "r") as xml_file:
     xml_data = xml_file.read()
     message_flow_data = xmltodict.parse(xml_data)
 
-# Create a figure and axis for plotting
-fig, ax = plt.subplots()
-
-# Extract nodes and connections
+# Create a dictionary to store node positions
 node_positions = {}
-for node in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['nodes']:
-    node_id = node['@xmi:id']
-    location = node['@location'].split(',')
-    x, y = map(float, location)
-    node_positions[node_id] = (x, y)
-    ax.annotate(node_id, (x, y))  # Add node IDs as labels
+
+# Analyze connections and calculate node positions
+y_offset = 50  # Vertical offset between nodes
+current_x = 50  # Initial horizontal position
 
 for connection in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['connections']:
     source_node = connection['@sourceNode']
     target_node = connection['@targetNode']
-    x1, y1 = node_positions[source_node]
-    x2, y2 = node_positions[target_node]
-    ax.plot([x1, x2], [y1, y2], 'b-')  # Draw lines for connections
 
-# Customize the layout as needed
+    # If the source node is not in the dictionary, add it at the current position
+    if source_node not in node_positions:
+        node_positions[source_node] = (current_x, 0)
+        current_x += 150  # Adjust horizontal spacing
 
-plt.axis('off')  # Turn off axes
-plt.show()  # Display the layout
+    # If the target node is not in the dictionary, add it below the source node
+    if target_node not in node_positions:
+        y_position = node_positions[source_node][1] - y_offset
+        node_positions[target_node] = (node_positions[source_node][0], y_position)
 
-# You can save the figure as an image or update the XML with the new positions
+# Update node locations in the XML
+for node in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['nodes']:
+    node_id = node['@xmi:id']
+    x, y = node_positions[node_id]
+    node['@location'] = f"{int(x)},{int(y)}"
+
+# Serialize the updated XML
+updated_xml = xmltodict.unparse(message_flow_data, pretty=True)
+
+# Save the updated XML
+with open("updated_message_flow.xml", "w") as updated_xml_file:
+    updated_xml_file.write(updated_xml)
