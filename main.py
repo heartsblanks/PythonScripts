@@ -8,8 +8,8 @@ with open("your_message_flow.xml", "r") as xml_file:
 # Create a dictionary to store node positions
 node_positions = {}
 
-# Create a dictionary to keep track of connections to each target node
-target_connections = {}
+# Create a dictionary to keep track of connections for each source node
+source_connections = {}
 
 # Analyze connections and calculate node positions
 x_offset = 150  # Horizontal offset between nodes
@@ -27,31 +27,28 @@ for connection in message_flow_data['ecore:EPackage']['eClassifiers']['compositi
     if target_node not in node_positions:
         x_position = node_positions[source_node][0] + x_offset
         node_positions[target_node] = (x_position, node_positions[source_node][1])
-        target_connections[target_node] = [connection]
+
+    if source_node in source_connections:
+        source_connections[source_node].append(connection)
     else:
-        if target_node in target_connections:
-            target_connections[target_node].append(connection)
+        source_connections[source_node] = [connection]
+
+# Arrange connections for each source node
+for source_node, connections in source_connections.items():
+    x_position = node_positions[source_node][0]
+    y_position = node_positions[source_node][1]
+
+    for connection in connections:
+        target_node = connection['@targetNode']
+
+        if x_position != node_positions[target_node][0]:
+            # If the x-positions differ, update x-position
+            x_position = node_positions[target_node][0]
         else:
-            target_connections[target_node] = [connection]
+            # If x-positions are the same, update y-position to avoid overlapping
+            y_position -= y_offset
 
-# Update positions for target nodes with multiple connections
-for target_node, connections in target_connections.items():
-    if len(connections) > 1:
-        source_node = connections[0]['@sourceNode']
-        x_position = node_positions[source_node][0]
-        y_position = node_positions[source_node][1]
-
-        for i, connection in connections:
-            if i == 0:
-                # First connection stays on the right
-                x_position += x_offset
-            elif i == 1:
-                # Second connection goes above
-                y_position += y_offset
-            else:
-                # Additional connections go below
-                y_position -= y_offset
-            node_positions[target_node] = (x_position, y_position)
+        node_positions[target_node] = (x_position, y_position)
 
 # Update node locations in the XML
 for node in message_flow_data['ecore:EPackage']['eClassifiers']['composition']['nodes']:
