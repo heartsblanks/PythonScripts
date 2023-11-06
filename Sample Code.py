@@ -16,7 +16,7 @@ def get_mapped_drive(network_path):
 
 # Find an available drive letter
 def find_available_drive():
-    used_drive_letters = [d[0] for d in string.ascii_uppercase if is_path_mapped(f"{d}:")]
+    used_drive_letters = [d[0] for d in string.ascii_uppercase if get_mapped_drive(f"{d}:")]
     available_drive_letters = [d for d in string.ascii_uppercase if d not in used_drive_letters]
 
     if available_drive_letters:
