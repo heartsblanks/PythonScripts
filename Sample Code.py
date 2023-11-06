@@ -1,13 +1,18 @@
 import subprocess
 import string
 
-# Define the network path you want to map
+# Define the network path you want to check
 network_path = r"\\server\share"
 
-# Check if the network path is already mapped
-def is_path_mapped(network_path):
+# Check if the network path is already mapped and return the drive letter
+def get_mapped_drive(network_path):
     result = subprocess.run("net use", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    return network_path.lower() in result.stdout.lower()
+    lines = result.stdout.splitlines()
+    for line in lines:
+        parts = line.split()
+        if len(parts) >= 3 and parts[0].endswith(":") and parts[1].lower() == network_path.lower():
+            return parts[0]
+    return None
 
 # Find an available drive letter
 def find_available_drive():
@@ -19,8 +24,9 @@ def find_available_drive():
     else:
         return None
 
-if is_path_mapped(network_path):
-    print(f"The network path {network_path} is already mapped.")
+mapped_drive = get_mapped_drive(network_path)
+if mapped_drive:
+    print(f"The network path {network_path} is already mapped to drive {mapped_drive}.")
 else:
     available_drive_letter = find_available_drive()
     if available_drive_letter:
