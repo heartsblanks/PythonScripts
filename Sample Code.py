@@ -1,31 +1,34 @@
-import os
-import sys
-import ibmIIBApi
+import subprocess
+import string
 
-# Load the IIB Toolkit API
-iib = ibmIIBApi.IibToolkit()
+# Define the network path you want to map
+network_path = r"\\server\share"
 
-# Set the path to the message set project directory
-msgset_dir = "/path/to/message/set/project"
+# Check if the network path is already mapped
+def is_path_mapped(network_path):
+    result = subprocess.run("net use", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    return network_path.lower() in result.stdout.lower()
 
-# Set the path to the DFDL schema output directory
-dfdl_dir = "/path/to/dfdl/schema/output"
+# Find an available drive letter
+def find_available_drive():
+    used_drive_letters = [d[0] for d in string.ascii_uppercase if is_path_mapped(f"{d}:")]
+    available_drive_letters = [d for d in string.ascii_uppercase if d not in used_drive_letters]
 
-# Set the name of the message set project
-msgset_name = "MyMessageSet"
+    if available_drive_letters:
+        return available_drive_letters[0]
+    else:
+        return None
 
-# Set the name of the output DFDL message model
-dfdl_name = "MyDfdlModel"
-
-# Create a new DFDL message model
-dfdl = iib.create_dfdl_model(dfdl_name)
-
-# Import the message set data into the DFDL model
-msgset = iib.load_message_set(msgset_name, msgset_dir)
-dfdl.import_message_set(msgset)
-
-# Save the DFDL schema to a file
-dfdl_file = os.path.join(dfdl_dir, dfdl_name + ".xsd")
-dfdl.save(dfdl_file)
-
-print("DFDL schema created: {}".format(dfdl_file))
+if is_path_mapped(network_path):
+    print(f"The network path {network_path} is already mapped.")
+else:
+    available_drive_letter = find_available_drive()
+    if available_drive_letter:
+        map_command = f"net use {available_drive_letter}: {network_path}"
+        try:
+            subprocess.run(map_command, shell=True, check=True)
+            print(f"Mapped {available_drive_letter}: to {network_path}.")
+        except subprocess.CalledProcessError:
+            print(f"Failed to map {available_drive_letter}: to {network_path}.")
+    else:
+        print("No available drive letters to map the network path.")
