@@ -1,25 +1,37 @@
-import pyautogui
-import time
+import pygame
 import random
+import sys
 
-# Get the screen size
-screen_width, screen_height = pyautogui.size()
+pygame.init()
 
+screen_width, screen_height = 800, 600
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("Confetti Pop on Click")
+
+white = (255, 255, 255)
 confetti_colors = [(255, 0, 0), (0, 255, 0)]  # Red for failed, green for passed
 confetti_size = 10
-num_confetti = 100
 
-# Simulate confetti popping out
-for _ in range(num_confetti):
-    x = random.randint(0, screen_width)
-    y = random.randint(0, screen_height)
-    color = random.choice(confetti_colors)
+confetti_positions = []
 
-    # Move the mouse to the confetti position
-    pyautogui.moveTo(x, y, duration=0.2)
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            color = random.choice(confetti_colors)
+            confetti_positions.append((x, y, color))
 
-    # Simulate a mouse click to create the "pop" effect
-    pyautogui.click()
+    screen.fill(white)
 
-    # Pause briefly before the next confetti
-    time.sleep(0.1)
+    for confetti in confetti_positions:
+        pygame.draw.circle(screen, confetti[2], (confetti[0], confetti[1]), confetti_size)
+
+    pygame.display.flip()
+    pygame.time.delay(50)
+
+    confetti_positions = [(x, y + 5, color) for x, y, color in confetti_positions if y < screen_height]
+
+# The program will only exit when the window is closed.
