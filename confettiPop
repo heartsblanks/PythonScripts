@@ -2,17 +2,40 @@ import pygame
 import random
 import sys
 
+# Initialize Pygame
 pygame.init()
 
-screen_width, screen_height = 800, 600
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Confetti Pop on Click")
+# Set up display
+width, height = 800, 600
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Confetti Animation")
 
-white = (255, 255, 255)
-confetti_colors = [(255, 0, 0), (0, 255, 0)]  # Red for failed, green for passed
-confetti_size = 10
+# Colors
+colors = [(123, 92, 255), (179, 199, 255), (92, 134, 255)]
 
-confetti_positions = []
+# Confetti class
+class Confetto(pygame.sprite.Sprite):
+    def __init__(self, x, y, color):
+        super().__init__()
+        self.image = pygame.Surface((10, 10))
+        self.image.fill(color)
+        self.rect = self.image.get_rect(center=(x, y))
+        self.gravity = 0.3
+        self.drag = 0.075
+        self.terminal_velocity = 3
+        self.velocity = [random.uniform(-2, 2), random.uniform(-10, -5)]
+
+    def update(self):
+        self.velocity[1] += self.gravity
+        self.velocity[0] *= 1 - self.drag
+        self.velocity[1] *= 1 - self.drag
+        self.rect.move_ip(*self.velocity)
+
+# Create a sprite group for confetti
+confetti_group = pygame.sprite.Group()
+
+# Main game loop
+clock = pygame.time.Clock()
 
 while True:
     for event in pygame.event.get():
@@ -20,18 +43,20 @@ while True:
             pygame.quit()
             sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = pygame.mouse.get_pos()
-            color = random.choice(confetti_colors)
-            confetti_positions.append((x, y, color))
+            x, y = event.pos
+            color = random.choice(colors)
+            confetto = Confetto(x, y, color)
+            confetti_group.add(confetto)
 
-    screen.fill(white)
+    # Update confetti
+    confetti_group.update()
 
-    for confetti in confetti_positions:
-        pygame.draw.circle(screen, confetti[2], (confetti[0], confetti[1]), confetti_size)
+    # Draw
+    screen.fill((255, 255, 255))
+    confetti_group.draw(screen)
 
+    # Refresh display
     pygame.display.flip()
-    pygame.time.delay(50)
 
-    confetti_positions = [(x, y + 5, color) for x, y, color in confetti_positions if y < screen_height]
-
-# The program will only exit when the window is closed.
+    # Cap the frame rate
+    clock.tick(60)
