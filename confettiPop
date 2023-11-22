@@ -1,0 +1,25 @@
+import pyautogui
+import time
+import random
+
+# Get the screen size
+screen_width, screen_height = pyautogui.size()
+
+confetti_colors = [(255, 0, 0), (0, 255, 0)]  # Red for failed, green for passed
+confetti_size = 10
+num_confetti = 100
+
+# Simulate confetti popping out
+for _ in range(num_confetti):
+    x = random.randint(0, screen_width)
+    y = random.randint(0, screen_height)
+    color = random.choice(confetti_colors)
+
+    # Move the mouse to the confetti position
+    pyautogui.moveTo(x, y, duration=0.2)
+
+    # Simulate a mouse click to create the "pop" effect
+    pyautogui.click()
+
+    # Pause briefly before the next confetti
+    time.sleep(0.1)
