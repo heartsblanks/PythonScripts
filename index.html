@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confetti Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // ammount to add on each button press
+const confettiCount = 20
+const sequinCount = 10
+
+// "physics" variables
+const gravityConfetti = 0.3
+const gravitySequins = 0.55
+const dragConfetti = 0.075
+const dragSequins = 0.02
+const terminalVelocity = 3
+
+// init other global elements
+const canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+let cx = ctx.canvas.width / 2;
+let cy = ctx.canvas.height / 2;
+
+// add Confetto/Sequin objects to arrays to draw them
+let confetti = [];
+let sequins = [];
+
+// colors, back side is darker for confetti flipping
+const colors = [
+  { front : '#7b5cff', back: '#6245e0' }, // Purple
+  { front : '#b3c7ff', back: '#8fa5e5' }, // Light Blue
+  { front : '#5c86ff', back: '#345dd1' }  // Darker Blue
+]
+
+// helper function to pick a random number within a range
+const randomRange = (min, max) => Math.random() * (max - min) + min;
+
+// helper function to get initial velocities for confetti
+const initConfettoVelocity = (xRange, yRange) => {
+  const x = randomRange(xRange[0], xRange[1]);
+  const y = randomRange(yRange[0], yRange[1]);
+  return { x, y };
+};
+
+// Confetto class
+class Confetto {
+  constructor({ x, y, color }) {
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    this.dimensions = {
+      x: randomRange(5, 9),
+      y: randomRange(8, 15),
+    };
+    const angle = randomRange(55, 65);
+    const velocity = initConfettoVelocity([-6, 6], [-3, 1]);
+    this.rotation = randomRange(0, 2 * Math.PI);
+    this.rotationSpeed = randomRange(0.2, 1);
+    this.xSpeed = Math.sin(angle) * velocity.x;
+    this.ySpeed = Math.cos(angle) * velocity.y;
+    this.tilt = 0;
+    this.tiltAngle = randomRange(-0.1, 0.1);
+  }
+
+  update() {
+    this.x += this.xSpeed;
+    this.y += this.ySpeed;
+    this.tiltAngle += this.tiltAngle * 0.1;
+    this.ySpeed += gravityConfetti;
+    this.xSpeed *= 0.99;
+    this.ySpeed *= 0.99;
+
+    // Apply rotation and tilt
+    this.rotation += this.rotationSpeed;
+    this.tilt = Math.sin(this.tiltAngle);
+  }
+
+  draw() {
+    ctx.save();
+    ctx.fillStyle = this.color.front;
+    ctx.translate(this.x + this.dimensions.x / 2, this.y + this.dimensions.y / 2);
+    ctx.rotate(this.rotation + this.tilt);
+    ctx.fillRect(-this.dimensions.x / 2, -this.dimensions.y / 2, this.dimensions.x, this.dimensions.y);
+
+    // Drawing the back side
+    ctx.fillStyle = this.color.back;
+    ctx.rotate(Math.PI);
+    ctx.translate(-this.dimensions.x, -this.dimensions.y);
+    ctx.fillRect(0, 0, this.dimensions.x, this.dimensions.y);
+
+    ctx.restore();
+  }
+}
+
+// Function to create confetti
+const createConfetti = ({ x, y, color }) => {
+  for (let i = 0; i < confettiCount; i++) {
+    confetti.push(new Confetto({ x, y, color }));
+  }
+};
+
+// Function to update and draw confetti
+const updateConfetti = () => {
+  for (let i = 0; i < confetti.length; i++) {
+    confetti[i].update();
+    confetti[i].draw();
+
+    // Remove confetti if out of view
+    if (confetti[i].y > ctx.canvas.height) {
+      confetti.splice(i, 1);
+      i--;
+    }
+  }
+};
+
+// Event listener for mouse click
+document.addEventListener('mousedown', (event) => {
+  const { clientX, clientY } = event;
+  const color = colors[Math.floor(randomRange(0, colors.length))];
+  createConfetti({ x: clientX, y: clientY, color });
+});
+
+// Main animation loop
+const animate = () => {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  updateConfetti();
+  requestAnimationFrame(animate);
+};
+
+// Start the animation loop
+animate();</script>
+</body>
+</html>
