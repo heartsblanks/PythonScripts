@@ -1,0 +1,24 @@
+from customtkinter import CTkScrollableFrame
+
+class MyCustomScrollableFrame(CTkScrollableFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+        # Additional customization for initialization if needed
+
+    def add_item(self, item):
+        # Add your item (e.g., another label) to the frame...
+        new_label = customtkinter.CTkLabel(self, text=item)
+        new_label.grid(row=len(self.grid_slaves()) + 1, column=0, pady=(0, 10))
+
+        # After adding the item, update the view
+        self.update_idletasks()
+        self.yview_moveto(1.0)
+
+# ...
+
+# Use your custom class instead of the original CTkScrollableFrame
+Frame_test = MyCustomScrollableFrame(master)
+Frame_test.grid(row=0, column=0, sticky="nsew")
+
+# Add an item to the frame
+Frame_test.add_item("New Item")
