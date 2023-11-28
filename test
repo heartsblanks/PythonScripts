@@ -1,24 +1,25 @@
-from customtkinter import CTkScrollableFrame
+from customtkinter import CTkLabel, CTkScrollableFrame
 
 class MyCustomScrollableFrame(CTkScrollableFrame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-        # Additional customization for initialization if needed
+    def _fit_frame_dimensions_to_canvas(self, event):
+        # Call the parent method first to preserve its functionality
+        super()._fit_frame_dimensions_to_canvas(event)
 
-    def add_item(self, item):
-        # Add your item (e.g., another label) to the frame...
-        new_label = customtkinter.CTkLabel(self, text=item)
-        new_label.grid(row=len(self.grid_slaves()) + 1, column=0, pady=(0, 10))
-
-        # After adding the item, update the view
-        self.update_idletasks()
-        self.yview_moveto(1.0)
+        # Additional customization for scrolling to the bottom
+        self.yview_moveto(1.0)  # You can adjust this based on your needs
 
 # ...
 
-# Use your custom class instead of the original CTkScrollableFrame
+# Now, use your custom class instead of the original CTkScrollableFrame
 Frame_test = MyCustomScrollableFrame(master)
 Frame_test.grid(row=0, column=0, sticky="nsew")
 
-# Add an item to the frame
-Frame_test.add_item("New Item")
+# Add 30 labels to the frame
+for i in range(30):
+    label_text = f"Label {i+1}"
+    new_label = CTkLabel(Frame_test, text=label_text)
+    new_label.grid(row=len(Frame_test.grid_slaves()) + 1, column=0, pady=(0, 10))
+
+    # After adding each label, update the view
+    Frame_test.update_idletasks()
+    Frame_test.yview_moveto(1.0)
