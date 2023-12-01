@@ -18,14 +18,14 @@ def simulate_task():
     stop_timer()  # Stop the timer after the loop
 
 def start_timer():
-    global start_time, stop_event
+    global start_time, stop_event, timer_thread
     start_time = datetime.now()
     stop_event = threading.Event()
-    update_timer()  # Start the timer update
     timer_thread = threading.Thread(target=update_timer)
     timer_thread.start()
 
 def stop_timer():
+    global timer_thread
     if stop_event is not None:
         stop_event.set()  # Set the event to stop the timer
         timer_thread.join()  # Wait for the timer thread to finish
