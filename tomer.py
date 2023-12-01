@@ -4,11 +4,11 @@ import threading
 import time
 
 def update_timer():
-    while not stop_event.is_set():
-        current_time = datetime.now() - start_time
-        formatted_time = str(current_time).split(".")[0]
-        timer_label.config(text=f"Time: {formatted_time}")
-        time.sleep(1)
+    current_time = datetime.now() - start_time
+    formatted_time = str(current_time).split(".")[0]
+    timer_label.config(text=f"Time: {formatted_time}")
+    if not stop_event.is_set():
+        root.after(1000, update_timer)  # Schedule the next update after 1000 milliseconds (1 second)
 
 def simulate_task():
     start_timer()  # Start the timer before the loop
@@ -21,15 +21,17 @@ def start_timer():
     global start_time, stop_event
     start_time = datetime.now()
     stop_event = threading.Event()
+    update_timer()  # Start the timer update
     timer_thread = threading.Thread(target=update_timer)
     timer_thread.start()
 
 def stop_timer():
-    stop_event.set()  # Set the event to stop the timer
-    timer_thread.join()  # Wait for the timer thread to finish
-    current_time = datetime.now() - start_time
-    formatted_time = str(current_time).split(".")[0]
-    timer_label.config(text=f"Total Time taken: {formatted_time}")
+    if stop_event is not None:
+        stop_event.set()  # Set the event to stop the timer
+        timer_thread.join()  # Wait for the timer thread to finish
+        current_time = datetime.now() - start_time
+        formatted_time = str(current_time).split(".")[0]
+        timer_label.config(text=f"Total Time taken: {formatted_time}")
 
 # Create the main window
 root = tk.Tk()
