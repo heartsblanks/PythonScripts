@@ -1,47 +1,37 @@
-import tkinter as tk
-from datetime import datetime
 import time
-
-def start_timer():
-    global start_time
-    start_time = datetime.now()
-    update_timer()
-
-def stop_timer():
-    current_time = datetime.now() - start_time
-    formatted_time = str(current_time).split(".")[0]
-    timer_label.config(text=f"Time taken: {formatted_time}")
+from datetime import datetime
+import threading
 
 def update_timer():
-    current_time = datetime.now() - start_time
-    formatted_time = str(current_time).split(".")[0]
-    timer_label.config(text=f"Time: {formatted_time}")
-    root.after(1000, update_timer)  # Update every 1000 milliseconds (1 second)
+    while not stop_event.is_set():
+        current_time = datetime.now() - start_time
+        formatted_time = str(current_time).split(".")[0]
+        print(f"Time: {formatted_time}")
+        time.sleep(1)
 
 def simulate_task():
-    start_timer()  # Start the timer
-    for i in range(11):
-        progress_var.set(i * 10)  # Update progress bar
-        root.update_idletasks()
+    start_timer()  # Start the timer before the loop
+    for i in range(1, 11):
+        print(i)
         time.sleep(1)
-    stop_timer()  # Stop the timer
+    stop_timer()  # Stop the timer after the loop
 
-# Create the main window
-root = tk.Tk()
-root.title("Progress with Timer")
+def start_timer():
+    global start_time, stop_event
+    start_time = datetime.now()
+    stop_event = threading.Event()
+    timer_thread = threading.Thread(target=update_timer)
+    timer_thread.start()
 
-# Initialize variables
-progress_var = tk.IntVar()
+def stop_timer():
+    stop_event.set()  # Set the event to stop the timer
+    timer_thread.join()  # Wait for the timer thread to finish
+    current_time = datetime.now() - start_time
+    formatted_time = str(current_time).split(".")[0]
+    print(f"Total Time taken: {formatted_time}")
 
-# Create and place widgets
-progress_bar = tk.Progressbar(root, variable=progress_var, maximum=100)
-progress_bar.pack(pady=10)
+# Simulate the task in the main thread
+simulate_task()
 
-timer_label = tk.Label(root, text="Time: 00:00:00")
-timer_label.pack()
-
-start_button = tk.Button(root, text="Start", command=simulate_task)
-start_button.pack(pady=10)
-
-# Start the GUI
-root.mainloop()
+# Call update_timer independently (after the task has completed, for example)
+update_timer()
