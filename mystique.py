@@ -32,12 +32,16 @@ root = tk.Tk()
 root.title("MYSTIQUE Intro")
 
 # Create a frame
-frame = tk.Frame(root, bg="black")
+frame = tk.Frame(root)
 frame.pack(expand=True, fill="both")
 
 # Create a Canvas widget for turtle graphics
-canvas = tk.Canvas(frame, bg="black", width=400, height=200)
+canvas = tk.Canvas(frame, width=400, height=200)
 canvas.pack()
+
+# Create a turtle screen with a specified background color
+turtle_screen = turtle.Screen()
+turtle_screen.bgcolor("black")
 
 # Create a turtle
 mystique_turtle = turtle.RawTurtle(canvas)
