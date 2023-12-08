@@ -12,35 +12,18 @@ mystique_turtle.color("white")
 mystique_turtle.penup()
 mystique_turtle.hideturtle()
 
-# Function to draw MYSTIQUE
-def draw_mystique():
-    mystique_turtle.goto(-100, 0)
-    mystique_turtle.pendown()
-    mystique_turtle.write("M", font=("Arial", 36, "bold"))
-    mystique_turtle.penup()
-    mystique_turtle.goto(-50, 0)
-    mystique_turtle.pendown()
-    mystique_turtle.write("Y", font=("Arial", 36, "bold"))
-    mystique_turtle.penup()
-    mystique_turtle.goto(0, 0)
-    mystique_turtle.pendown()
-    mystique_turtle.write("S", font=("Arial", 36, "bold"))
-    mystique_turtle.penup()
-    mystique_turtle.goto(50, 0)
-    mystique_turtle.pendown()
-    mystique_turtle.write("T", font=("Arial", 36, "bold"))
-    mystique_turtle.penup()
-    mystique_turtle.goto(100, 0)
-    mystique_turtle.pendown()
-    mystique_turtle.write("I", font=("Arial", 36, "bold"))
-    mystique_turtle.penup()
-    mystique_turtle.goto(150, 0)
-    mystique_turtle.pendown()
-    mystique_turtle.write("Q", font=("Arial", 36, "bold"))
-    mystique_turtle.penup()
+# Function to draw MYSTIQUE line-style intro
+def draw_mystique_line_intro():
+    positions = [(-100, 0), (-50, 0), (0, 0), (50, 0), (100, 0), (150, 0)]
 
-# Draw the MYSTIQUE animation
-draw_mystique()
+    for position in positions:
+        mystique_turtle.goto(position)
+        mystique_turtle.pendown()
+        mystique_turtle.forward(30)  # Draw a line for each letter
+        mystique_turtle.penup()
+
+# Draw the MYSTIQUE line-style intro
+draw_mystique_line_intro()
 
 # Close the turtle graphics window on click
 screen.exitonclick()
