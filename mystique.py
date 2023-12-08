@@ -1,29 +1,53 @@
-from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
-from PyQt5.QtCore import Qt, QPropertyAnimation
+import turtle
+import tkinter as tk
 
-class MystiqueIntro(QWidget):
-    def __init__(self):
-        super().__init__()
+def draw_mystique():
+    mystique_turtle.goto(-100, 0)
+    mystique_turtle.pendown()
+    mystique_turtle.write("M", font=("Arial", 36, "bold"))
+    mystique_turtle.penup()
+    mystique_turtle.goto(-50, 0)
+    mystique_turtle.pendown()
+    mystique_turtle.write("Y", font=("Arial", 36, "bold"))
+    mystique_turtle.penup()
+    mystique_turtle.goto(0, 0)
+    mystique_turtle.pendown()
+    mystique_turtle.write("S", font=("Arial", 36, "bold"))
+    mystique_turtle.penup()
+    mystique_turtle.goto(50, 0)
+    mystique_turtle.pendown()
+    mystique_turtle.write("T", font=("Arial", 36, "bold"))
+    mystique_turtle.penup()
+    mystique_turtle.goto(100, 0)
+    mystique_turtle.pendown()
+    mystique_turtle.write("I", font=("Arial", 36, "bold"))
+    mystique_turtle.penup()
+    mystique_turtle.goto(150, 0)
+    mystique_turtle.pendown()
+    mystique_turtle.write("Q", font=("Arial", 36, "bold"))
+    mystique_turtle.penup()
 
-        layout = QVBoxLayout(self)
+# Create Tkinter window
+root = tk.Tk()
+root.title("MYSTIQUE Intro")
 
-        self.label = QLabel("Welcome to the Mystique Experience!", self)
-        layout.addWidget(self.label)
+# Create a frame
+frame = tk.Frame(root, bg="black")
+frame.pack(expand=True, fill="both")
 
-        self.setGeometry(100, 100, 800, 600)
-        self.show()
+# Create a Canvas widget for turtle graphics
+canvas = tk.Canvas(frame, bg="black", width=400, height=200)
+canvas.pack()
 
-        self.animate_intro()
+# Create a turtle
+mystique_turtle = turtle.RawTurtle(canvas)
+mystique_turtle.speed(2)
+mystique_turtle.color("white")
+mystique_turtle.penup()
+mystique_turtle.hideturtle()
 
-    def animate_intro(self):
-        animation = QPropertyAnimation(self.label, b"geometry")
-        animation.setDuration(3000)
-        animation.setStartValue(self.label.geometry())
-        animation.setEndValue(self.label.geometry().adjusted(0, 100, 0, 100))
-        animation.setEasingCurve(Qt.CurveType.InOutQuart)
-        animation.start()
+# Draw MYSTIQUE on canvas
+draw_mystique()
 
-if __name__ == "__main__":
-    app = QApplication([])
-    window = MystiqueIntro()
-    app.exec_()
+# Close the turtle graphics window on click
+root.mainloop()
