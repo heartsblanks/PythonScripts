@@ -4,20 +4,34 @@ import time
 bgcolor('grey')
 right(90)
 
-pos = [-40, 40]
-for x, y in zip(pos, pos):
+# Define positions for each letter
+positions = [-40, 40, 120, 200, 280, 360]
+
+for x in positions:
     up()
-    goto(x, y)
+    goto(x, 0)
     down()
     fillcolor('red')
     begin_fill()
-    for _ in range(2):
-        forward(200)
-        right(90)
-        forward(40)
-        right(90)
+    
+    # Draw the letter
+    if x != 200:  # For letters other than 'T'
+        for _ in range(2):
+            forward(200)
+            left(90)
+            forward(40)
+            left(90)
+    else:  # For 'T'
+        left(22)
+        for _ in range(2):
+            forward(217)
+            left(68)
+            forward(40)
+            left(112)
+    
     end_fill()
 
+# Delay before changing background color
 time.sleep(2)
 bgcolor('black')
 time.sleep(2)
