@@ -1,37 +1,188 @@
-from turtle import *
-import time
+# import the turtle module and time module for delay
+import turtle
+from time import sleep
 
-bgcolor('grey')
-right(90)
+# create a turtle object
+t = turtle.Turtle()
 
-# Define positions for each letter
-positions = [-40, 40, 120, 200, 280, 360]
+# set the speed of the turtle
+t.speed(4)
 
-for x in positions:
-    up()
-    goto(x, 0)
-    down()
-    fillcolor('red')
-    begin_fill()
-    
-    # Draw the letter
-    if x != 200:  # For letters other than 'T'
-        for _ in range(2):
-            forward(200)
-            left(90)
-            forward(40)
-            left(90)
-    else:  # For 'T'
-        left(22)
-        for _ in range(2):
-            forward(217)
-            left(68)
-            forward(40)
-            left(112)
-    
-    end_fill()
+# set the background color of the screen
+turtle.bgcolor("white")
 
-# Delay before changing background color
-time.sleep(2)
-bgcolor('black')
-time.sleep(2)
+# set the color of the turtle
+t.color("white")
+
+# set the title of the window
+turtle.title('MYSTIQUE Logo')
+
+# move the turtle to the starting position
+t.up()
+t.goto(-80, 50)
+t.down()
+
+# draw the outer box of the logo
+t.fillcolor("black")
+t.begin_fill()
+t.forward(200)
+t.setheading(270)
+s = 360
+for i in range(9):
+    s = s - 10
+    t.setheading(s)
+    t.forward(10)
+t.forward(180)
+s = 270
+for i in range(9):
+    s = s - 10
+    t.setheading(s)
+    t.forward(10)
+t.forward(200)
+s = 180
+for i in range(9):
+    s = s - 10
+    t.setheading(s)
+    t.forward(10)
+t.forward(180)
+s = 90
+for i in range(9):
+    s = s - 10
+    t.setheading(s)
+    t.forward(10)
+t.forward(30)
+t.end_fill()
+
+# draw the red stripe in the logo
+t.up()
+t.color("black")
+t.setheading(270)
+t.forward(240)
+t.setheading(0)
+t.down()
+t.color("red")
+t.fillcolor("#E50914")
+t.begin_fill()
+t.forward(30)
+t.setheading(90)
+t.forward(180)
+t.setheading(180)
+t.forward(30)
+t.setheading(270)
+t.forward(180)
+t.end_fill()
+t.setheading(0)
+t.up()
+t.forward(75)
+t.down()
+t.color("red")
+t.fillcolor("#E50914")
+t.begin_fill()
+t.forward(30)
+t.setheading(90)
+t.forward(180)
+t.setheading(180)
+t.forward(30)
+t.setheading(270)
+t.forward(180)
+t.end_fill()
+
+# draw the "M" in the logo
+t.color("red")
+t.fillcolor("red")
+t.begin_fill()
+t.setheading(113)
+t.forward(195)
+t.setheading(0)
+t.forward(31)
+t.setheading(293)
+t.forward(196)
+t.setheading(203)
+t.forward(196)
+t.setheading(0)
+t.forward(31)
+t.setheading(113)
+t.forward(195)
+t.end_fill()
+
+# draw the "Y" in the logo
+t.up()
+t.setheading(293)
+t.forward(60)
+t.down()
+t.color("red")
+t.fillcolor("red")
+t.begin_fill()
+t.setheading(240)
+t.forward(150)
+t.setheading(0)
+t.forward(30)
+t.setheading(60)
+t.forward(150)
+t.end_fill()
+
+# draw the "S" in the logo
+t.up()
+t.setheading(0)
+t.forward(75)
+t.down()
+t.color("red")
+t.fillcolor("red")
+t.begin_fill()
+t.circle(35, -90)
+t.setheading(270)
+t.forward(70)
+t.setheading(0)
+t.circle(35, -90)
+t.end_fill()
+
+# draw the "T" in the logo
+t.up()
+t.forward(80)
+t.down()
+t.color("red")
+t.fillcolor("red")
+t.begin_fill()
+t.forward(30)
+t.setheading(90)
+t.forward(180)
+t.setheading(180)
+t.forward(30)
+t.end_fill()
+
+# draw the "I" in the logo
+t.up()
+t.forward(80)
+t.down()
+t.color("red")
+t.fillcolor("red")
+t.begin_fill()
+t.forward(30)
+t.setheading(270)
+t.forward(180)
+t.setheading(180)
+t.forward(30)
+t.end_fill()
+
+# draw the "Q" in the logo
+t.up()
+t.forward(80)
+t.down()
+t.color("red")
+t.fillcolor("red")
+t.begin_fill()
+t.setheading(270)
+t.forward(60)
+t.circle(30, 180)
+t.forward(60)
+t.setheading(180)
+t.forward(60)
+t.setheading(90)
+t.circle(30, 180)
+t.forward(60)
+t.end_fill()
+
+# hide the turtle and wait for 10 seconds before closing the window
+t.hideturtle()
+sleep(10)
+turtle.done()
