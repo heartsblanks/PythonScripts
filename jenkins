@@ -1,0 +1,26 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'NEW_JOB_NAME', defaultValue: '', description: 'Enter the name for the new job')
+    }
+
+    stages {
+        stage('Create New Job') {
+            steps {
+                script {
+                    // Install and configure the Job DSL plugin if not done already
+                    // Use the 'NEW_JOB_NAME' parameter to dynamically set the new job name
+                    def jobName = params.NEW_JOB_NAME
+                    jobDsl script: """
+                        freeStyleJob('${jobName}') {
+                            // Define your new job configuration here
+                            // You can add build steps, post-build actions, etc.
+                            // Example: steps { shell("echo 'Hello, Jenkins!'") }
+                        }
+                    """
+                }
+            }
+        }
+    }
+}
