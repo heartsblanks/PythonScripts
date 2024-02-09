@@ -1,0 +1,17 @@
+# PowerShell script to change Zoom status
+Add-Type -AssemblyName UIAutomationClient, PresentationCore, PresentationFramework
+$zoomApp = Get-Process | Where-Object { $_.MainWindowTitle -eq "Zoom" }
+if ($zoomApp -ne $null) {
+    $zoomWindow = $zoomApp.MainWindowHandle
+    $zoomUI = [System.Windows.Automation.AutomationElement]::FromHandle($zoomWindow)
+    $menuBar = $zoomUI.FindFirst([System.Windows.Automation.TreeScope]::Descendants, `
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuBar)))
+    $statusMenu = $menuBar.FindFirst([System.Windows.Automation.TreeScope]::Descendants, `
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "Status")))
+    $setMenu = $statusMenu.FindFirst([System.Windows.Automation.TreeScope]::Children, `
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "Set Status")))
+    $availableMenuItem = $setMenu.FindFirst([System.Windows.Automation.TreeScope]::Children, `
+        (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, "Available")))
+    $invokePattern = [System.Windows.Automation.InvokePattern]::Pattern
+    $invokePattern.Invoke()
+}
