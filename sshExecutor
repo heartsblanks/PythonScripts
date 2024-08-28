@@ -1,0 +1,55 @@
+import paramiko
+import os
+import time
+
+class SSHExecutor:
+    def __init__(self, hostname, private_key_path, username=None):
+        self.hostname = hostname
+        self.private_key_path = private_key_path
+        self.username = username or os.environ.get('USERNAME').lower()
+        self.ssh = None
+
+    def connect(self):
+        """Establish the SSH connection."""
+        private_key = paramiko.RSAKey.from_private_key_file(self.private_key_path)
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh.connect(
+            self.hostname, 
+            username=self.username, 
+            pkey=private_key, 
+            disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}
+        )
+
+    def execute_command(self, command):
+        """Execute a command on the remote server."""
+        if self.ssh is None:
+            raise ValueError("SSH connection not established. Call connect() first.")
+        
+        stdin, stdout, stderr = self.ssh.exec_command(command, get_pty=True, bufsize=1)
+        
+        # Collect output while the command is running
+        output = []
+        while not stdout.channel.exit_status_ready():
+            output.append(stdout.read().decode())
+            time.sleep(1)  # Give some time between checks
+
+        return ''.join(output)
+
+    def close(self):
+        """Close the SSH connection."""
+        if self.ssh:
+            self.ssh.close()
+            self.ssh = None
+
+# Example usage
+def execute_commands(host, command):
+    ssh_executor = SSHExecutor(
+        hostname=host,
+        private_key_path='Z:\\.ssh\\id_rsa'
+    )
+    ssh_executor.connect()
+    try:
+        return ssh_executor.execute_command(command)
+    finally:
+        ssh_executor.close()
