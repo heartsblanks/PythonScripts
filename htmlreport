@@ -26,14 +26,21 @@
         .content {
             margin-top: 20px;
             display: none;
-            border: 1px solid #ddd;
             padding: 20px;
             border-radius: 5px;
             background-color: #f9f9f9;
         }
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
+        details {
+            margin-bottom: 10px;
+        }
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .dependencies {
+            margin-left: 20px;
+            padding-left: 10px;
+            border-left: 2px solid #007BFF;
         }
         #errorMessage {
             color: red;
@@ -44,24 +51,24 @@
 <body>
     <h1>Project Dependency Report</h1>
     <div style="text-align: center;">
-        <button class="button" onclick="loadContent('dependency_report.json', 'dependencyContent', 'dependencyPre')">Dependency Report</button>
-        <button class="button" onclick="loadContent('reversed_dependency_report.json', 'reverseDependencyContent', 'reverseDependencyPre')">Reverse Dependency Report</button>
+        <button class="button" onclick="loadContent('dependency_report.json', 'dependencyContent')">Dependency Report</button>
+        <button class="button" onclick="loadContent('reversed_dependency_report.json', 'reverseDependencyContent')">Reverse Dependency Report</button>
     </div>
 
     <div id="dependencyContent" class="content">
         <h2>Dependency Report</h2>
-        <pre id="dependencyPre"></pre>
+        <div id="dependencyList"></div>
     </div>
 
     <div id="reverseDependencyContent" class="content">
         <h2>Reverse Dependency Report</h2>
-        <pre id="reverseDependencyPre"></pre>
+        <div id="reverseDependencyList"></div>
     </div>
 
     <p id="errorMessage"></p>
 
     <script>
-        function loadContent(jsonFile, contentId, preId) {
+        function loadContent(jsonFile, contentId) {
             fetch(jsonFile)
                 .then(response => {
                     if (!response.ok) {
@@ -71,20 +78,39 @@
                 })
                 .then(data => {
                     const contentElement = document.getElementById(contentId);
-                    const preElement = document.getElementById(preId);
+                    const listElement = contentElement.querySelector('div');
 
-                    // Check if elements exist
-                    if (contentElement && preElement) {
-                        // Hide all content sections
-                        document.getElementById('dependencyContent').style.display = 'none';
-                        document.getElementById('reverseDependencyContent').style.display = 'none';
+                    // Clear any previous content
+                    listElement.innerHTML = '';
 
-                        // Set the content and display it
-                        preElement.textContent = JSON.stringify(data, null, 4);
-                        contentElement.style.display = 'block';
-                    } else {
-                        throw new Error(`Element with ID ${contentId} or ${preId} not found.`);
+                    // Populate the collapsible project list
+                    for (const project in data) {
+                        if (data.hasOwnProperty(project)) {
+                            const dependencies = data[project];
+                            const detailsElement = document.createElement('details');
+                            const summaryElement = document.createElement('summary');
+                            const dependenciesElement = document.createElement('div');
+
+                            summaryElement.textContent = project;
+                            dependenciesElement.className = 'dependencies';
+
+                            // Populate dependencies
+                            dependencies.forEach(dep => {
+                                const depElement = document.createElement('div');
+                                depElement.textContent = dep;
+                                dependenciesElement.appendChild(depElement);
+                            });
+
+                            detailsElement.appendChild(summaryElement);
+                            detailsElement.appendChild(dependenciesElement);
+                            listElement.appendChild(detailsElement);
+                        }
                     }
+
+                    // Show the content section
+                    document.getElementById('dependencyContent').style.display = 'none';
+                    document.getElementById('reverseDependencyContent').style.display = 'none';
+                    contentElement.style.display = 'block';
                 })
                 .catch(error => {
                     console.error('Error loading content:', error);
