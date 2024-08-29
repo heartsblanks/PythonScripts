@@ -1,6 +1,7 @@
 import concurrent.futures
 import json
-from sshConnector import SSHExecutor  # Import the SSHExecutor class
+from sshConnector import SSHExecutor
+from tqdm import tqdm
 
 def get_project_dependencies(ssh_executor, project_dir):
     dependencies = []
@@ -28,23 +29,27 @@ def generate_dependency_report(hostname, username, private_key_path, project_dir
         # Initialize the SSH connection
         ssh_executor = SSHExecutor(hostname, username, private_key_path)
 
-        # Parallel execution using ThreadPoolExecutor
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            future_to_project = {executor.submit(get_project_dependencies, ssh_executor, project_dir): project_dir for project_dir in project_dirs}
+        # Setup tqdm for progress tracking
+        with tqdm(total=len(project_dirs), desc="Processing Projects") as pbar:
+            # Parallel execution using ThreadPoolExecutor
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                future_to_project = {executor.submit(get_project_dependencies, ssh_executor, project_dir): project_dir for project_dir in project_dirs}
 
-            for future in concurrent.futures.as_completed(future_to_project):
-                project_dir = future_to_project[future]
-                try:
-                    dependencies = future.result()
-                    project_name = project_dir.split('/')[-1]
+                for future in concurrent.futures.as_completed(future_to_project):
+                    project_dir = future_to_project[future]
+                    try:
+                        dependencies = future.result()
+                        project_name = project_dir.split('/')[-1]
 
-                    for dep in dependencies:
-                        if dep not in dependency_map:
-                            dependency_map[dep] = []
-                        dependency_map[dep].append(project_name)
-                except Exception as e:
-                    print(f"Error processing {project_dir}: {e}")
-
+                        for dep in dependencies:
+                            if dep not in dependency_map:
+                                dependency_map[dep] = []
+                            dependency_map[dep].append(project_name)
+                    except Exception as e:
+                        print(f"Error processing {project_dir}: {e}")
+                    finally:
+                        # Update the progress bar
+                        pbar.update(1)
     finally:
         # Ensure that the SSH connection is closed
         if ssh_executor is not None:
