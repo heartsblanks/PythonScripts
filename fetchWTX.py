@@ -1,28 +1,22 @@
 import sqlite3
 import os
 import re
-from datetime import datetime
 
-# Assuming SSHExecutor is a class that handles SSH connections and command execution
-class SSHExecutor:
-    def __init__(self, host, user, password):
-        # Initialization code for connecting to the host
-        pass
+def fetch_wtx_projects_from_db():
+    """Fetch project name and PF_name from the SQLite database."""
+    conn = sqlite3.connect('wtx_project_details.db')
+    cursor = conn.cursor()
+    
+    # Fetch all rows with project_name and PF_name
+    cursor.execute('SELECT project_name, PF_name FROM WTX_PROJECT_DETAILS')
+    projects = cursor.fetchall()
+    
+    conn.close()
+    return projects
 
-    def execute_command(self, command):
-        # Code to execute a command on the remote host and return the output
-        pass
-
-def fetch_wtx_projects(ssh_executor, directory):
-    """Fetch all folder names starting with 'WTX'."""
-    command = f"ls -d {directory}/WTX*"
-    result = ssh_executor.execute_command(command)
-    # Assuming the result is a list of folder paths
-    return result.splitlines()
-
-def fetch_latest_log(ssh_executor, project_directory):
-    """Fetch the latest log file from the project directory."""
-    command = f"ls -t {project_directory}/*.log | head -n 1"
+def fetch_latest_log(ssh_executor, project_identifier, directory):
+    """Fetch the latest log file for the given project identifier (PF_name or project_name)."""
+    command = f"ls -t {directory}/{project_identifier}/*.log | head -n 1"
     latest_log = ssh_executor.execute_command(command).strip()
     return latest_log
 
@@ -33,53 +27,48 @@ def extract_cvs_tag(log_content):
         return match.group(1)
     return None
 
-def insert_into_db(project_name, cvs_tag):
-    """Insert project details into SQLite database."""
+def update_db_with_cvs_tag(project_name, cvs_tag):
+    """Update the database with the retrieved cvs_tag for the given project."""
     conn = sqlite3.connect('wtx_project_details.db')
     cursor = conn.cursor()
 
-    # Ensure table exists
+    # Update the table with the new cvs_tag (production_tag)
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS WTX_PROJECT_DETAILS (
-            project_name TEXT,
-            pap TEXT,
-            production_tag TEXT
-        )
-    ''')
-
-    # Insert project data
-    cursor.execute('''
-        INSERT INTO WTX_PROJECT_DETAILS (project_name, pap, production_tag)
-        VALUES (?, ?, ?)
-    ''', (project_name, 'PAP_Value', cvs_tag))  # Assuming 'PAP_Value' is a placeholder for your actual PAP value
+        UPDATE WTX_PROJECT_DETAILS
+        SET production_tag = ?
+        WHERE project_name = ?
+    ''', (cvs_tag, project_name))
 
     conn.commit()
     conn.close()
 
 def main():
-    # SSH details for both hosts
-    first_host_ssh = SSHExecutor('first_host', 'user', 'password')
+    # SSH details for the host
     second_host_ssh = SSHExecutor('second_host', 'user', 'password')
 
-    # Directory on first host containing WTX projects
-    first_host_directory = "/path/to/first/host/directory"
-    
-    # Fetch WTX project folders
-    wtx_projects = fetch_wtx_projects(first_host_ssh, first_host_directory)
+    # Directory on second host containing logs
+    second_host_directory = "/path/to/second/host/directory"
 
-    # Process each project
-    for project in wtx_projects:
-        # Connect to second host and fetch the latest log file for each project
-        latest_log_file = fetch_latest_log(second_host_ssh, f"/path/to/second/host/directory/{os.path.basename(project)}")
+    # Fetch projects and PF_names from the database
+    projects = fetch_wtx_projects_from_db()
+
+    for project_name, pf_name in projects:
+        # Determine the identifier to use (PF_name or project_name)
+        project_identifier = pf_name if pf_name else project_name
         
-        # Fetch log file content
-        log_content = second_host_ssh.execute_command(f"cat {latest_log_file}")
+        # Fetch the latest log file based on the project identifier
+        latest_log_file = fetch_latest_log(second_host_ssh, project_identifier, second_host_directory)
         
-        # Extract cvs_tag from the log file content
-        cvs_tag = extract_cvs_tag(log_content)
-        if cvs_tag:
-            # Insert project name and cvs_tag into the SQLite database
-            insert_into_db(os.path.basename(project), cvs_tag)
+        if latest_log_file:
+            # Fetch log file content
+            log_content = second_host_ssh.execute_command(f"cat {latest_log_file}")
+            
+            # Extract cvs_tag from the log file content
+            cvs_tag = extract_cvs_tag(log_content)
+            
+            if cvs_tag:
+                # Update the project with the extracted cvs_tag
+                update_db_with_cvs_tag(project_name, cvs_tag)
 
 if __name__ == "__main__":
     main()
