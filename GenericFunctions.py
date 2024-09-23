@@ -1,122 +1,39 @@
-import os
-import subprocess
-import zipfile
+import pandas as pd
+import sqlite3
+import re
 
-class GenericFunctions:
-    def InstallationType(self):
-        # Your code here
-        pass
+# Connect to your database (SQLite in this example, you can use others like MySQL or PostgreSQL)
+conn = sqlite3.connect('your_database.db')
+cursor = conn.cursor()
 
-    def CheckWorkspace(self, workspace):
-        # Your code here
-        pass
+# Load the Excel file
+file_path = 'your_file.xlsx'
+xls = pd.ExcelFile(file_path)
 
-    def HBPassword(self, password):
-        # Your code here
-        pass
+# Iterate over each sheet
+for sheet_name in xls.sheet_names:
+    # Replace '-' with '_' in the table name
+    table_name = re.sub(r'-', '_', sheet_name)
 
-    def HOPassword(self, password):
-        # Your code here
-        pass
+    # Read the data from the sheet
+    df = pd.read_excel(xls, sheet_name=sheet_name)
 
-    def RepoUpdateType(self, update_type):
-        # Your code here
-        pass
+    # Use the first row as column names and drop the first row from the data
+    df.columns = df.iloc[0]
+    df = df.drop(df.index[0])
 
-    def RebootAutomatically(self, enable):
-        # Your code here
-        pass
+    # Create table if it doesn't exist
+    columns = ', '.join([f'"{col}" TEXT' for col in df.columns])
+    create_table_query = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns});'
+    cursor.execute(create_table_query)
 
-    def InstallMavenCLI(self):
-        # Your code here
-        pass
+    # Insert data into the table
+    for row in df.itertuples(index=False):
+        placeholders = ', '.join(['?' for _ in row])
+        insert_query = f'INSERT INTO "{table_name}" VALUES ({placeholders})'
+        cursor.execute(insert_query, row)
 
-    def InstallJRE(self):
-        # Your code here
-        pass
+    conn.commit()
 
-    def InstallMavenPlugin(self, plugin_name):
-        # Your code here
-        pass
-
-    def CheckLDAPGroup(self, group_name):
-        # Your code here
-        pass
-
-    def checkPathExists(self, path):
-        # Your code here
-        pass
-
-    def checkCommandWorking(self, command):
-        # Your code here
-        pass
-
-    def checkCVSConnection(self, url):
-        # Your code here
-        pass
-
-    def checkGitConnection(self, url):
-        # Your code here
-        pass
-
-    def CheckoutEAIDefaults(self, branch_name):
-        # Your code here
-        pass
-
-    def CheckoutETLDefaults(self, branch_name):
-        # Your code here
-        pass
-
-    def getDataFromGit(self, url, branch_name, local_dir):
-        # Your code here
-        pass
-
-    def getDataFromCVS(self, url, local_dir):
-        # Your code here
-        pass
-
-    def createLocalPropertyFiles(self):
-        # Your code here
-        pass
-
-    def getEAIDeveloperPorts(self):
-        # Your code here
-        pass
-
-    def replaceStringInFile(self, file_path, old_string, new_string):
-        # Your code here
-        pass
-
-    def copyFiles(self, src_path, dst_path):
-        # Your code here
-        pass
-
-    def getEncryptedPassword(self, password):
-        # Your code here
-        pass
-
-    def checkIfExecutableRunning(self, executable_name):
-        # Your code here
-        pass
-
-    def extractZipFile(self, zip_path, extract_path):
-        # Your code here
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_path)
-
-    def installToolkitPluginFromLocal(self, local_path):
-        # Your code here
-        pass
-
-    def importDefaultProjectsEAI(self):
-        # Your code here
-        pass
-
-    def installEclipsePlugin(self, plugin_url):
-        # Your code here
-        pass
-
-    def importProjectUsingBarFile(self, bar_file_path):
-        # Your code here
-        pass
-
+# Close the connection
+conn.close()
