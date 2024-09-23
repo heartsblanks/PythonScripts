@@ -47,15 +47,36 @@ for sheet_name in xls.sheet_names:
         lambda x: x.split('/')[1] if isinstance(x, str) and '/' in x else x
     )
 
+    # Create the PAP column based on the specified conditions
+    def determine_pap(row):
+        col_2_value = row.PROJECT_TYPE  # Adjust if column mapping is different
+        
+        if isinstance(col_2_value, str):
+            if col_2_value.startswith(('PF', 'PW')):
+                extracted = col_2_value[2:7]  # Get characters 3, 5, 6, and 7 (0-indexed)
+                return 'shared' if extracted.isalpha() else extracted
+            
+            parts = col_2_value.split('_')
+            if len(parts) > 2:
+                if parts[0] == 'STD':
+                    return 'STD'
+                if parts[1].isalpha() or parts[1] == '0000':
+                    return 'shared'
+        
+        return None  # Default case if no conditions are met
+
+    df['PAP'] = df.apply(determine_pap, axis=1)
+
     # Prepare the columns for insertion
-    db_columns = ', '.join(excel_to_db_mapping.values())  # Database column names
+    db_columns = ', '.join(excel_to_db_mapping.values()) + ', PAP'  # Include PAP
 
     # Insert the data into the table
     for row in df.itertuples(index=False):
         values = [
             row.db_col_1,          # Modified first column
             row.PROJECT_TYPE,      # 'type' column mapped to PROJECT_TYPE
-            row.db_col_3           # Third column
+            row.db_col_3,          # Third column
+            row.PAP                 # PAP column
         ]
         
         placeholders = ', '.join(['?' for _ in values])  # Prepare placeholders for SQL insertion
