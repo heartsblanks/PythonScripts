@@ -12,42 +12,50 @@ xls = pd.ExcelFile(file_path, engine='openpyxl')
 # Define the table name (which is already created in the database)
 table_name = "IIB_project_details"
 
-# Mapping of Excel columns to database columns (based on the Excel column name)
-# The Excel 'type' column will map to the 'PROJECT_TYPE' column in the database
-column_mapping = {
-    'db_col_1': 0,           # Excel column 0 maps to db_col_1
-    'PROJECT_TYPE': 'type',  # Excel column 'type' maps to PROJECT_TYPE
-    'db_col_3': 2,           # Excel column 2 maps to db_col_3
-    'db_col_4': 3,           # Excel column 3 maps to db_col_4
-    'db_col_5': 4            # Excel column 4 maps to db_col_5
+# Define the mapping of Excel column names to desired names
+excel_to_db_mapping = {
+    'Actual_First_Column_Name': 'db_col_1',   # Excel column maps to DB column
+    'type': 'PROJECT_TYPE',                     # Excel 'type' maps to DB 'PROJECT_TYPE'
+    'Actual_Third_Column_Name': 'db_col_3'     # Additional mapping as needed
 }
 
 # Loop through all sheets and insert data into the same pre-existing table
 for sheet_name in xls.sheet_names:
     # Read the data from the current sheet
-    df = pd.read_excel(xls, sheet_name=sheet_name, header=0)
+    df = pd.read_excel(xls, sheet_name=sheet_name)
 
-    # Check if the DataFrame has data
-    if df.empty:
-        print(f"No data found in sheet {sheet_name}")
+    # Strip whitespace from the column names
+    df.columns = df.columns.str.strip()
+
+    # Print the actual column names loaded
+    print(f"Columns in {sheet_name}: {df.columns.tolist()}")
+
+    # Check if the desired columns are present
+    missing_columns = [col for col in excel_to_db_mapping.keys() if col not in df.columns]
+    if missing_columns:
+        print(f"Missing columns in sheet {sheet_name}: {missing_columns}")
         continue
 
-    # Modify the first column (db_col_1): split by '/' and take the second part
-    df.iloc[:, column_mapping['db_col_1']] = df.iloc[:, column_mapping['db_col_1']].apply(
+    # Keep only the desired columns
+    df = df[list(excel_to_db_mapping.keys())]
+
+    # Rename columns in the DataFrame to match the database schema
+    df.rename(columns=excel_to_db_mapping, inplace=True)
+
+    # Modify the specified column (db_col_1): split by '/' and take the second part
+    df['db_col_1'] = df['db_col_1'].apply(
         lambda x: x.split('/')[1] if isinstance(x, str) and '/' in x else x
     )
 
     # Prepare the columns for insertion
-    db_columns = ', '.join(column_mapping.keys())  # Database column names
+    db_columns = ', '.join(excel_to_db_mapping.values())  # Database column names
 
     # Insert the data into the table
     for row in df.itertuples(index=False):
         values = [
-            row[column_mapping['db_col_1']],                # First column after split
-            row[df.columns.get_loc(column_mapping['PROJECT_TYPE'])],  # 'type' column mapped to PROJECT_TYPE
-            row[column_mapping['db_col_3']],                # 3rd column
-            row[column_mapping['db_col_4']],                # 4th column
-            row[column_mapping['db_col_5']]                 # 5th column
+            row.db_col_1,          # Modified first column
+            row.PROJECT_TYPE,      # 'type' column mapped to PROJECT_TYPE
+            row.db_col_3           # Third column
         ]
         
         placeholders = ', '.join(['?' for _ in values])  # Prepare placeholders for SQL insertion
