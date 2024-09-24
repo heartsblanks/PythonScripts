@@ -1,4 +1,3 @@
-import os
 import re
 import sqlite3  # Change this import for your specific database
 
@@ -6,40 +5,53 @@ import sqlite3  # Change this import for your specific database
 conn = sqlite3.connect('mq_definitions.db')  # Change the database name if needed
 cursor = conn.cursor()
 
-# Directory containing the MQSC files
-directory = 'mqsc_files'  # Change this to your directory path
+# Sample input string with DEFINE statements
+input_string = """
+DEFINE QLOCAL('MY.QUEUE') REPLACE
+DEFINE CHANNEL('MY.CHANNEL') CHLTYPE(SVRCONN) MCAUSER('mqm')
+DEFINE QREMOTE('MY.REMOTE.QUEUE') RNAME('REMOTE.QUEUE') RQMNAME('REMOTE.QUEUE.MANAGER')
+DEFINE QUEUE('MY.QUEUE') MAXDEPTH(5000)
+DEFINE QDEFINE('MY.DEFINE.QUEUE') REPLACE
+DEFINE CHANNEL('MY.SECOND.CHANNEL') CHLTYPE(SVRCONN) MCAUSER('mqm2')
+"""
 
 # Regex pattern to match DEFINE statements for queues and channels
 pattern = r"DEFINE\s+(Q\w+|CHANNEL)\('([^']+)'\)(.*)"
 
-# Process each file in the specified directory
-for filename in os.listdir(directory):
-    if filename.endswith('.mqsc'):  # Ensure we're processing only MQSC files
-        file_path = os.path.join(directory, filename)
+# Find all matches
+matches = re.findall(pattern, input_string)
 
-        with open(file_path, 'r') as file:
-            input_string = file.read()
+# Prepare SQL for inserting data
+insert_query = """
+INSERT INTO mq_definitions (Type, Name, REPLACE, CHLTYPE, MCAUSER, RNAME, RQMNAME, MAXDEPTH)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+"""
 
-        # Find all matches
-        matches = re.findall(pattern, input_string)
+# Insert each match into the database
+for type_, name, properties in matches:
+    # Extract additional properties
+    additional_props = re.findall(r"(\w+)\s*=\s*('.*?'|[^ ]+)", properties)
+    properties_dict = {name.strip(): value.strip("'") for name, value in additional_props}
+    
+    # Prepare the data for insertion
+    data = {
+        'Type': type_,
+        'Name': name,
+        'REPLACE': properties_dict.get('REPLACE', ''),
+        'CHLTYPE': properties_dict.get('CHLTYPE', ''),
+        'MCAUSER': properties_dict.get('MCAUSER', ''),
+        'RNAME': properties_dict.get('RNAME', ''),
+        'RQMNAME': properties_dict.get('RQMNAME', ''),
+        'MAXDEPTH': properties_dict.get('MAXDEPTH', None)
+    }
 
-        # Insert each match into the database
-        for type_, name, properties in matches:
-            # Extract additional properties
-            additional_props = re.findall(r"(\w+)\s*=\s*('.*?'|[^ ]+)", properties)
-            properties_dict = {name.strip(): value.strip("'") for name, value in additional_props}
-
-            # Add Type and Name to the properties dictionary
-            properties_dict['Type'] = type_
-            properties_dict['Name'] = name
-
-            # Create dynamic insert statement
-            columns = ', '.join(properties_dict.keys())
-            placeholders = ', '.join(['?'] * len(properties_dict))
-            insert_query = f"INSERT INTO mq_definitions ({columns}) VALUES ({placeholders})"
-
-            # Execute the insert statement
-            cursor.execute(insert_query, tuple(properties_dict.values()))
+    # Execute the insert statement
+    cursor.execute(insert_query, (
+        data['Type'], data['Name'], data['REPLACE'],
+        data['CHLTYPE'], data['MCAUSER'], 
+        data['RNAME'], data['RQMNAME'], 
+        data['MAXDEPTH']
+    ))
 
 # Commit changes and close the connection
 conn.commit()
