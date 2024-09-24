@@ -1,91 +1,46 @@
-import pandas as pd
-import sqlite3
+import os
+import re
+import sqlite3  # Change this import for your specific database
 
-# Connect to your pre-existing database (SQLite in this example)
-conn = sqlite3.connect('your_database.db')
+# Connect to the database (adjust for your database setup)
+conn = sqlite3.connect('mq_definitions.db')  # Change the database name if needed
 cursor = conn.cursor()
 
-# Load the Excel file
-file_path = 'your_file.xlsx'
-xls = pd.ExcelFile(file_path, engine='openpyxl')
+# Directory containing the MQSC files
+directory = 'mqsc_files'  # Change this to your directory path
 
-# Define the table name (which is already created in the database)
-table_name = "IIB_project_details"
+# Regex pattern to match DEFINE statements for queues and channels
+pattern = r"DEFINE\s+(Q\w+|CHANNEL)\('([^']+)'\)(.*)"
 
-# Define the mapping of Excel column names to desired names
-excel_to_db_mapping = {
-    'Actual_First_Column_Name': 'db_col_1',   # Excel column maps to DB column
-    'type': 'PROJECT_TYPE',                     # Excel 'type' maps to DB 'PROJECT_TYPE'
-    'Actual_Third_Column_Name': 'db_col_3'     # Additional mapping as needed
-}
+# Process each file in the specified directory
+for filename in os.listdir(directory):
+    if filename.endswith('.mqsc'):  # Ensure we're processing only MQSC files
+        file_path = os.path.join(directory, filename)
 
-# Loop through all sheets and insert data into the same pre-existing table
-for sheet_name in xls.sheet_names:
-    # Read the data from the current sheet
-    df = pd.read_excel(xls, sheet_name=sheet_name)
+        with open(file_path, 'r') as file:
+            input_string = file.read()
 
-    # Strip whitespace from the column names
-    df.columns = df.columns.str.strip()
+        # Find all matches
+        matches = re.findall(pattern, input_string)
 
-    # Print the actual column names loaded
-    print(f"Columns in {sheet_name}: {df.columns.tolist()}")
+        # Insert each match into the database
+        for type_, name, properties in matches:
+            # Extract additional properties
+            additional_props = re.findall(r"(\w+)\s*=\s*('.*?'|[^ ]+)", properties)
+            properties_dict = {name.strip(): value.strip("'") for name, value in additional_props}
 
-    # Check if the desired columns are present
-    missing_columns = [col for col in excel_to_db_mapping.keys() if col not in df.columns]
-    if missing_columns:
-        print(f"Missing columns in sheet {sheet_name}: {missing_columns}")
-        continue
+            # Add Type and Name to the properties dictionary
+            properties_dict['Type'] = type_
+            properties_dict['Name'] = name
 
-    # Keep only the desired columns
-    df = df[list(excel_to_db_mapping.keys())]
+            # Create dynamic insert statement
+            columns = ', '.join(properties_dict.keys())
+            placeholders = ', '.join(['?'] * len(properties_dict))
+            insert_query = f"INSERT INTO mq_definitions ({columns}) VALUES ({placeholders})"
 
-    # Rename columns in the DataFrame to match the database schema
-    df.rename(columns=excel_to_db_mapping, inplace=True)
+            # Execute the insert statement
+            cursor.execute(insert_query, tuple(properties_dict.values()))
 
-    # Modify the specified column (db_col_1): split by '/' and take the second part
-    df['db_col_1'] = df['db_col_1'].apply(
-        lambda x: x.split('/')[1] if isinstance(x, str) and '/' in x else x
-    )
-
-    # Create the PAP column based on the specified conditions
-    def determine_pap(row):
-        col_2_value = row.PROJECT_TYPE  # Adjust if column mapping is different
-        
-        if isinstance(col_2_value, str):
-            if col_2_value.startswith(('PF', 'PW')):
-                extracted = col_2_value[2:7]  # Get characters 3, 5, 6, and 7 (0-indexed)
-                return 'shared' if extracted.isalpha() else extracted
-            
-            parts = col_2_value.split('_')
-            if len(parts) > 2:
-                if parts[0] == 'STD':
-                    return 'STD'
-                if parts[1].isalpha() or parts[1] == '0000':
-                    return 'shared'
-        
-        return None  # Default case if no conditions are met
-
-    df['PAP'] = df.apply(determine_pap, axis=1)
-
-    # Prepare the columns for insertion
-    db_columns = ', '.join(excel_to_db_mapping.values()) + ', PAP'  # Include PAP
-
-    # Insert the data into the table
-    for row in df.itertuples(index=False):
-        values = [
-            row.db_col_1,          # Modified first column
-            row.PROJECT_TYPE,      # 'type' column mapped to PROJECT_TYPE
-            row.db_col_3,          # Third column
-            row.PAP                 # PAP column
-        ]
-        
-        placeholders = ', '.join(['?' for _ in values])  # Prepare placeholders for SQL insertion
-        insert_query = f'INSERT INTO "{table_name}" ({db_columns}) VALUES ({placeholders})'
-        cursor.execute(insert_query, values)
-
-    print(f"Data from sheet {sheet_name} inserted into {table_name}")
-
-    conn.commit()
-
-# Close the connection
+# Commit changes and close the connection
+conn.commit()
 conn.close()
