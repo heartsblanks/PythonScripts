@@ -1,9 +1,10 @@
 import pandas as pd
 from datetime import datetime
+import sqlite3
 
-# Assume this method is already defined somewhere in your code
-def execute_sql_query(sql_query, params):
-    cursor.execute(sql_query, params)
+# Connect to the SQLite database
+conn = sqlite3.connect('your_database.db')
+cursor = conn.cursor()
 
 # Read the Excel file using pandas
 file_path = 'your_excel_file.xlsx'
@@ -21,31 +22,45 @@ column_mapping = {
     "UPDATED_TIMESTAMP": "Current Timestamp"  # This will use the current timestamp
 }
 
-# Columns used to check for existing records (composite key)
+# Primary key columns (already part of the table definition)
 key_columns = ["FLOW_NAME", "PAP", "PF_NUMBER", "MANDANT"]
 
 # Iterate over rows and insert or update the SQLite table
 for index, row in df.iterrows():
-    # Extract relevant columns based on the mapping
-    excel_data = {table_col: row[excel_col].strip() if isinstance(row[excel_col], str) else row[excel_col]
-                  for table_col, excel_col in column_mapping.items() if excel_col != "Current Timestamp"}
+    # Prepare a dictionary for the property values (column name -> value)
+    properties_dict = {table_col: row[excel_col].strip() if isinstance(row[excel_col], str) else row[excel_col]
+                       for table_col, excel_col in column_mapping.items() if excel_col != "Current Timestamp"}
 
-    # Get the current timestamp for UPDATED_TIMESTAMP
-    excel_data["UPDATED_TIMESTAMP"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # Add the current timestamp for the UPDATED_TIMESTAMP column
+    properties_dict["UPDATED_TIMESTAMP"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # Prepare the insert statement with ON CONFLICT to handle updates
+    # Dynamically generate column names and placeholders for SQL query
+    columns = ', '.join(properties_dict.keys())
+    placeholders = ', '.join(['?'] * len(properties_dict))
+
+    # Dynamically generate update columns for the ON CONFLICT clause
+    update_columns = ', '.join([f"{key} = ?" for key in properties_dict.keys()])
+
+    # Prepare the values for insertion and update
+    insert_values = tuple(properties_dict.values())
+    update_values = tuple(properties_dict.values())
+
+    # Combine insert and update values for the execute function
+    query_values = insert_values + update_values
+
+    # Prepare the upsert query: insert if it doesn't exist, or update if it exists
     insert_query = f"""
-    INSERT INTO your_table_name ({', '.join(column_mapping.keys())})
-    VALUES ({', '.join(['?' for _ in column_mapping.keys()])})
-    ON CONFLICT ({', '.join(key_columns)}) 
-    DO UPDATE SET {', '.join([f"{col} = excluded.{col}" for col in column_mapping.keys() if col != "UPDATED_TIMESTAMP"])}
-    , UPDATED_TIMESTAMP = excluded.UPDATED_TIMESTAMP
+    INSERT INTO your_table_name ({columns})
+    VALUES ({placeholders})
+    ON CONFLICT({', '.join(key_columns)})
+    DO UPDATE SET {update_columns};
     """
 
-    # Create the params from the excel_data
-    params_data = tuple(excel_data.values())
+    # Execute the upsert query
+    cursor.execute(insert_query, query_values)
 
-    # Execute the insert or update query using your method
-    execute_sql_query(insert_query, params_data)
+# Commit changes and close the connection
+conn.commit()
+conn.close()
 
 print("Data has been successfully inserted or updated in the table.")
