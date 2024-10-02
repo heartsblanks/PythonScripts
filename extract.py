@@ -1,23 +1,10 @@
 import sqlite3
 import re
+import os
 from datetime import datetime
+from urllib.parse import quote
 
-# Assume this is your existing method that retrieves file content
-def get_file_content_from_repo(repo_org, file_folder, file_name, branch):
-    # This method is a placeholder for your existing implementation
-    # You will replace it with your actual method to fetch file content from the repository
-    pass
-
-# Function to get primary key columns from the table schema
-def get_primary_key_columns(table_name, cursor):
-    cursor.execute(f"PRAGMA table_info({table_name});")
-    table_info = cursor.fetchall()
-    
-    # Extract column names where pk (primary key) is non-zero
-    primary_key_columns = [info[1] for info in table_info if info[5] > 0]
-    return primary_key_columns
-
-# Function to extract the project name from file content
+# Function to extract project name from file content
 def extract_project_name(file_content):
     match = re.search(r"configure\.project\.name\.mfp=(.*)", file_content)
     if match:
@@ -32,7 +19,16 @@ def extract_date_from_production_tag(production_tag):
         return datetime.strptime(date_str, "%Y-%m-%d-%H%M")
     return None
 
-# Main function to retrieve data, fetch file content, and insert into PROJECT_DETAILS table
+# Function to read the file content from a local directory
+def get_file_content_from_local(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            return file.read()
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        return None
+
+# Function to process the data and update project details in batches
 def update_project_details(repo_org, file_folder, branch):
     # Connect to the SQLite database
     conn = sqlite3.connect('your_database.db')
@@ -40,9 +36,6 @@ def update_project_details(repo_org, file_folder, branch):
 
     # Original table where data is stored
     source_table = 'your_source_table'
-
-    # Get the primary key columns dynamically from the source table
-    primary_key_columns = get_primary_key_columns(source_table, cursor)
 
     # Fetch all columns from the source table (using SELECT *)
     cursor.execute(f"SELECT * FROM {source_table}")
@@ -67,6 +60,9 @@ def update_project_details(repo_org, file_folder, branch):
         if pap not in pap_dict or (tag_date and tag_date > pap_dict[pap]['date']):
             pap_dict[pap] = {'row': row_dict, 'date': tag_date}
 
+    # Prepare data for batch insert/update
+    project_data = []
+
     # Iterate over the filtered rows (latest for each PAP)
     for pap, data in pap_dict.items():
         row_dict = data['row']
@@ -78,32 +74,32 @@ def update_project_details(repo_org, file_folder, branch):
         integration_server = row_dict.get('INTEGRATION_SERVER')
         platform = row_dict.get('PLATFORM')
 
-        # Fetch the file content where the file name matches PF_NUMBER
-        file_content = get_file_content_from_repo(repo_org, file_folder, pf_number, branch)
+        # Build the file path and read the content from the local directory
+        encoded_file_name = quote(pf_number)
+        file_path = os.path.join(file_folder, encoded_file_name)
+        file_content = get_file_content_from_local(file_path)
 
         # Extract the project name from the file content
         project_name = extract_project_name(file_content)
-        
+
         if project_name:
-            # Dynamically construct the insert query based on column names
-            columns = ', '.join(column_names)
-            placeholders = ', '.join(['?'] * len(column_names))
-            
-            # Prepare the insert query for PROJECT_DETAILS
-            insert_query = f"""
-            INSERT INTO PROJECT_DETAILS (PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT)
-            DO UPDATE SET PRODUCTION_TAG = excluded.PRODUCTION_TAG,
-                          INTEGRATION_SERVER = excluded.INTEGRATION_SERVER,
-                          PLATFORM = excluded.PLATFORM;
-            """
+            # Prepare the data for batch insert/update
+            project_type = pf_number  # Assuming PROJECT_TYPE is derived from PF_NUMBER
+            project_data.append((project_name, pap, project_type, mandant, production_tag, integration_server, platform))
 
-            # PROJECT_TYPE is derived from PF_NUMBER (you can adjust this if needed)
-            project_type = pf_number
+    # Perform batch insert/update
+    if project_data:
+        insert_query = f"""
+        INSERT INTO PROJECT_DETAILS (PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT)
+        DO UPDATE SET PRODUCTION_TAG = excluded.PRODUCTION_TAG,
+                      INTEGRATION_SERVER = excluded.INTEGRATION_SERVER,
+                      PLATFORM = excluded.PLATFORM;
+        """
 
-            # Insert or update the data in the PROJECT_DETAILS table
-            cursor.execute(insert_query, (project_name, pap, project_type, mandant, production_tag, integration_server, platform))
+        # Batch insert all rows
+        cursor.executemany(insert_query, project_data)
 
     # Commit changes and close the connection
     conn.commit()
