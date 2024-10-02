@@ -3,6 +3,7 @@ import re
 import os
 from datetime import datetime
 from urllib.parse import quote
+from collections import defaultdict
 
 # Function to extract project name from file content
 def extract_project_name(file_content):
@@ -46,33 +47,43 @@ def update_project_details(repo_org, file_folder, branch):
     table_info = cursor.fetchall()
     column_names = [info[1] for info in table_info]  # Extract column names
 
-    # Group rows by PAP and filter by the latest PRODUCTION_TAG
-    pap_dict = {}
+    # Dictionary to store grouped data for each PAP and PF_NUMBER
+    grouped_data = defaultdict(lambda: {'mandants': set(), 'integration_servers': set(), 'latest_production_tag': None, 'row': None})
+
+    # Iterate over each row to group data by PAP and PF_NUMBER
     for row in rows:
         row_dict = dict(zip(column_names, row))  # Map column names to row values
         pap = row_dict['PAP']
+        pf_number = row_dict['PF_NUMBER']
+        mandant = row_dict['MANDANT']
+        integration_server = row_dict.get('INTEGRATION_SERVER')
         production_tag = row_dict['PRODUCTION_TAG']
+        platform = row_dict.get('PLATFORM')
 
         # Extract the date from the PRODUCTION_TAG
         tag_date = extract_date_from_production_tag(production_tag)
 
-        # For each PAP, keep the row with the latest PRODUCTION_TAG date
-        if pap not in pap_dict or (tag_date and tag_date > pap_dict[pap]['date']):
-            pap_dict[pap] = {'row': row_dict, 'date': tag_date}
+        # Update the mandants and integration servers (adding them to a set to avoid duplicates)
+        grouped_data[(pap, pf_number)]['mandants'].add(mandant)
+        grouped_data[(pap, pf_number)]['integration_servers'].add(integration_server)
+
+        # Check if the current production tag is the latest one for this PAP and PF_NUMBER
+        if (grouped_data[(pap, pf_number)]['latest_production_tag'] is None or
+                (tag_date and tag_date > extract_date_from_production_tag(grouped_data[(pap, pf_number)]['latest_production_tag']))):
+            grouped_data[(pap, pf_number)]['latest_production_tag'] = production_tag
+            grouped_data[(pap, pf_number)]['row'] = row_dict  # Keep the latest row
 
     # Prepare data for batch insert/update
     project_data = []
 
-    # Iterate over the filtered rows (latest for each PAP)
-    for pap, data in pap_dict.items():
+    # Iterate over the grouped data
+    for (pap, pf_number), data in grouped_data.items():
         row_dict = data['row']
 
-        # Extract necessary fields from the row
-        pf_number = row_dict['PF_NUMBER']
-        mandant = row_dict['MANDANT']
-        production_tag = row_dict['PRODUCTION_TAG']
-        integration_server = row_dict.get('INTEGRATION_SERVER')
-        platform = row_dict.get('PLATFORM')
+        # Convert mandants and integration servers to comma-separated strings
+        mandants = ', '.join(sorted(data['mandants']))
+        integration_servers = ', '.join(sorted(data['integration_servers']))
+        production_tag = data['latest_production_tag']
 
         # Build the file path and read the content from the local directory
         encoded_file_name = quote(pf_number)
@@ -85,17 +96,22 @@ def update_project_details(repo_org, file_folder, branch):
         if project_name:
             # Prepare the data for batch insert/update
             project_type = pf_number  # Assuming PROJECT_TYPE is derived from PF_NUMBER
-            project_data.append((project_name, pap, project_type, mandant, production_tag, integration_server, platform))
+            project_data.append((project_name, pap, project_type, mandants, production_tag, integration_servers, row_dict['PLATFORM']))
 
-    # Perform batch insert/update
+    # Perform batch insert/update with the WHERE clause to update only if there are changes
     if project_data:
         insert_query = f"""
         INSERT INTO PROJECT_DETAILS (PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT)
+        ON CONFLICT(PROJECT_NAME, PAP, PROJECT_TYPE)
         DO UPDATE SET PRODUCTION_TAG = excluded.PRODUCTION_TAG,
+                      MANDANT = excluded.MANDANT,
                       INTEGRATION_SERVER = excluded.INTEGRATION_SERVER,
-                      PLATFORM = excluded.PLATFORM;
+                      PLATFORM = excluded.PLATFORM
+        WHERE PROJECT_DETAILS.PRODUCTION_TAG != excluded.PRODUCTION_TAG
+            OR PROJECT_DETAILS.MANDANT != excluded.MANDANT
+            OR PROJECT_DETAILS.INTEGRATION_SERVER != excluded.INTEGRATION_SERVER
+            OR PROJECT_DETAILS.PLATFORM != excluded.PLATFORM;
         """
 
         # Batch insert all rows
