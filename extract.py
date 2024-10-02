@@ -1,66 +1,72 @@
-import pandas as pd
-from datetime import datetime
 import sqlite3
+import re
 
-# Connect to the SQLite database
-conn = sqlite3.connect('your_database.db')
-cursor = conn.cursor()
+# Assume this is your existing method that retrieves file content
+def get_file_content_from_repo(repo_org, file_folder, file_name, branch):
+    # This method is a placeholder for your existing implementation
+    # You will replace it with your actual method to fetch file content from the repository
+    pass
 
-# Read the Excel file using pandas
-file_path = 'your_excel_file.xlsx'
-df = pd.read_excel(file_path, sheet_name='export')
+# Function to get primary key columns from the table schema
+def get_primary_key_columns(table_name, cursor):
+    cursor.execute(f"PRAGMA table_info({table_name});")
+    table_info = cursor.fetchall()
+    
+    # Extract column names where pk (primary key) is non-zero
+    primary_key_columns = [info[1] for info in table_info if info[5] > 0]
+    return primary_key_columns
 
-# Mapping of table columns to Excel columns
-column_mapping = {
-    "FLOW_NAME": "FlowName",
-    "PAP": "PAP",
-    "PF_NUMBER": "FlowID",
-    "MANDANT": "Mandant",
-    "PRODUCTION_TAG": "ProdTag",
-    "INTEGRATION_SERVER": "IIB EG",
-    "PLATFORM": "ACE Node",
-    "UPDATED_TIMESTAMP": "Current Timestamp"  # This will use the current timestamp
-}
+# Function to extract the project name from file content
+def extract_project_name(file_content):
+    match = re.search(r"configure\.project\.name\.mfp=(.*)", file_content)
+    if match:
+        return match.group(1).strip()
+    return None
 
-# Primary key columns (already part of the table definition)
-key_columns = ["FLOW_NAME", "PAP", "PF_NUMBER", "MANDANT"]
+# Main function to retrieve data, fetch file content, and insert into PROJECT_DETAILS table
+def update_project_details(repo_org, file_folder, branch):
+    # Connect to the SQLite database
+    conn = sqlite3.connect('your_database.db')
+    cursor = conn.cursor()
 
-# Iterate over rows and insert or update the SQLite table
-for index, row in df.iterrows():
-    # Prepare a dictionary for the property values (column name -> value)
-    properties_dict = {table_col: row[excel_col].strip() if isinstance(row[excel_col], str) else row[excel_col]
-                       for table_col, excel_col in column_mapping.items() if excel_col != "Current Timestamp"}
+    # Original table where PAP, PF_NUMBER, MANDANT, and other data are stored
+    source_table = 'your_source_table'
 
-    # Add the current timestamp for the UPDATED_TIMESTAMP column
-    properties_dict["UPDATED_TIMESTAMP"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # Get the primary key columns dynamically from the source table
+    primary_key_columns = get_primary_key_columns(source_table, cursor)
 
-    # Dynamically generate column names and placeholders for SQL query
-    columns = ', '.join(properties_dict.keys())
-    placeholders = ', '.join(['?'] * len(properties_dict))
+    # Fetch rows from the original table (PAP, PF_NUMBER, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM)
+    cursor.execute(f"SELECT PAP, PF_NUMBER, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM FROM {source_table}")
+    rows = cursor.fetchall()
 
-    # Dynamically generate update columns for the ON CONFLICT clause
-    update_columns = ', '.join([f"{key} = ?" for key in properties_dict.keys()])
+    # Iterate over each row to fetch the file content and insert into PROJECT_DETAILS
+    for row in rows:
+        pap, pf_number, mandant, production_tag, integration_server, platform = row
+        
+        # Fetch the file content where the file name matches PF_NUMBER
+        file_content = get_file_content_from_repo(repo_org, file_folder, pf_number, branch)
 
-    # Prepare the values for insertion and update
-    insert_values = tuple(properties_dict.values())
-    update_values = tuple(properties_dict.values())
+        # Extract the project name from the file content
+        project_name = extract_project_name(file_content)
+        
+        if project_name:
+            # Prepare the insert query for PROJECT_DETAILS
+            insert_query = f"""
+            INSERT INTO PROJECT_DETAILS (PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT)
+            DO UPDATE SET PRODUCTION_TAG = excluded.PRODUCTION_TAG,
+                          INTEGRATION_SERVER = excluded.INTEGRATION_SERVER,
+                          PLATFORM = excluded.PLATFORM;
+            """
+            # PROJECT_TYPE is derived from PF_NUMBER (based on your requirements, you can modify this part)
+            project_type = pf_number  # Assuming PF_NUMBER is used as PROJECT_TYPE
 
-    # Combine insert and update values for the execute function
-    query_values = insert_values + update_values
+            # Insert or update the data in the PROJECT_DETAILS table
+            cursor.execute(insert_query, (project_name, pap, project_type, mandant, production_tag, integration_server, platform))
 
-    # Prepare the upsert query: insert if it doesn't exist, or update if it exists
-    insert_query = f"""
-    INSERT INTO your_table_name ({columns})
-    VALUES ({placeholders})
-    ON CONFLICT({', '.join(key_columns)})
-    DO UPDATE SET {update_columns};
-    """
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
 
-    # Execute the upsert query
-    cursor.execute(insert_query, query_values)
-
-# Commit changes and close the connection
-conn.commit()
-conn.close()
-
-print("Data has been successfully inserted or updated in the table.")
+    print("Data has been successfully inserted or updated in the PROJECT_DETAILS table.")
