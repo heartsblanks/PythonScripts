@@ -1,10 +1,10 @@
 import openpyxl
-import sqlite3
 from datetime import datetime
 
-# Connect to the SQLite database
-db_connection = sqlite3.connect('your_database.db')
-cursor = db_connection.cursor()
+# Assume this method is already defined somewhere in your code
+def execute_sql_query(sql_query, params):
+    # Your existing implementation to execute the query
+    cursor.execute(sql_query, params)
 
 # Load the Excel file
 file_path = 'your_excel_file.xlsx'
@@ -51,12 +51,7 @@ for row in sheet.iter_rows(min_row=2, values_only=True):
     , UPDATED_TIMESTAMP = excluded.UPDATED_TIMESTAMP
     """
 
-    # Execute the insert or update query
-    cursor.execute(insert_query, list(excel_data.values()))
-
-# Commit the changes and close the database connection
-db_connection.commit()
-cursor.close()
-db_connection.close()
+    # Execute the insert or update query using your method
+    execute_sql_query(insert_query, list(excel_data.values()))
 
 print("Data has been successfully inserted or updated in the table.")
