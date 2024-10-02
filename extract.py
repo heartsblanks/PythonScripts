@@ -1,15 +1,13 @@
-import openpyxl
+import pandas as pd
 from datetime import datetime
 
 # Assume this method is already defined somewhere in your code
 def execute_sql_query(sql_query, params):
-    # Your existing implementation to execute the query
     cursor.execute(sql_query, params)
 
-# Load the Excel file
+# Read the Excel file using pandas
 file_path = 'your_excel_file.xlsx'
-wb = openpyxl.load_workbook(file_path)
-sheet = wb['export']
+df = pd.read_excel(file_path, sheet_name='export')
 
 # Mapping of table columns to Excel columns
 column_mapping = {
@@ -26,18 +24,11 @@ column_mapping = {
 # Columns used to check for existing records (composite key)
 key_columns = ["FLOW_NAME", "PAP", "PF_NUMBER", "MANDANT"]
 
-# Fetch the first row (header) and strip spaces
-excel_headers = [cell.value.strip() if cell.value else '' for cell in sheet[1]]
-
 # Iterate over rows and insert or update the SQLite table
-for row in sheet.iter_rows(min_row=2, values_only=True):
+for index, row in df.iterrows():
     # Extract relevant columns based on the mapping
-    excel_data = {table_col: None for table_col in column_mapping.keys()}
-    for table_col, excel_col in column_mapping.items():
-        if excel_col != "Current Timestamp":  # Skip timestamp, we'll handle that manually
-            # Strip spaces in Excel column name and find the correct index
-            if excel_col.strip() in excel_headers:
-                excel_data[table_col] = row[excel_headers.index(excel_col.strip())]
+    excel_data = {table_col: row[excel_col].strip() if isinstance(row[excel_col], str) else row[excel_col]
+                  for table_col, excel_col in column_mapping.items() if excel_col != "Current Timestamp"}
 
     # Get the current timestamp for UPDATED_TIMESTAMP
     excel_data["UPDATED_TIMESTAMP"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -51,7 +42,10 @@ for row in sheet.iter_rows(min_row=2, values_only=True):
     , UPDATED_TIMESTAMP = excluded.UPDATED_TIMESTAMP
     """
 
+    # Create the params from the excel_data
+    params_data = tuple(excel_data.values())
+
     # Execute the insert or update query using your method
-    execute_sql_query(insert_query, list(excel_data.values()))
+    execute_sql_query(insert_query, params_data)
 
 print("Data has been successfully inserted or updated in the table.")
