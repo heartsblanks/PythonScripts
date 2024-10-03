@@ -63,10 +63,13 @@ def update_project_details(repo_org, file_folder, branch):
         # Extract the date from the PRODUCTION_TAG
         tag_date = extract_date_from_production_tag(production_tag)
 
-        # Update the mandants, integration servers, and platforms (adding them to a set to avoid duplicates)
-        grouped_data[(pap, pf_number)]['mandants'].add(mandant)
-        grouped_data[(pap, pf_number)]['integration_servers'].add(integration_server)
-        grouped_data[(pap, pf_number)]['platforms'].add(platform)
+        # Ignore null values for mandants, integration servers, and platforms
+        if mandant:
+            grouped_data[(pap, pf_number)]['mandants'].add(mandant)
+        if integration_server:
+            grouped_data[(pap, pf_number)]['integration_servers'].add(integration_server)
+        if platform:
+            grouped_data[(pap, pf_number)]['platforms'].add(platform)
 
         # Check if the current production tag is the latest one for this PAP and PF_NUMBER
         if (grouped_data[(pap, pf_number)]['latest_production_tag'] is None or
@@ -82,9 +85,9 @@ def update_project_details(repo_org, file_folder, branch):
         row_dict = data['row']
 
         # Convert mandants, integration servers, and platforms to semicolon-separated strings
-        mandants = '; '.join(sorted(data['mandants']))
-        integration_servers = '; '.join(sorted(data['integration_servers']))
-        platforms = '; '.join(sorted(data['platforms']))
+        mandants = '; '.join(sorted(data['mandants'])) if data['mandants'] else ''
+        integration_servers = '; '.join(sorted(data['integration_servers'])) if data['integration_servers'] else ''
+        platforms = '; '.join(sorted(data['platforms'])) if data['platforms'] else ''
         production_tag = data['latest_production_tag']
 
         # Build the file path and read the content from the local directory
@@ -98,29 +101,4 @@ def update_project_details(repo_org, file_folder, branch):
         if project_name:
             # Prepare the data for batch insert/update
             project_type = pf_number  # Assuming PROJECT_TYPE is derived from PF_NUMBER
-            project_data.append((project_name, pap, project_type, mandants, production_tag, integration_servers, platforms))
-
-    # Perform batch insert/update with the WHERE clause to update only if there are changes
-    if project_data:
-        insert_query = f"""
-        INSERT INTO PROJECT_DETAILS (PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(PROJECT_NAME, PAP, PROJECT_TYPE)
-        DO UPDATE SET PRODUCTION_TAG = excluded.PRODUCTION_TAG,
-                      MANDANT = excluded.MANDANT,
-                      INTEGRATION_SERVER = excluded.INTEGRATION_SERVER,
-                      PLATFORM = excluded.PLATFORM
-        WHERE PROJECT_DETAILS.PRODUCTION_TAG != excluded.PRODUCTION_TAG
-            OR PROJECT_DETAILS.MANDANT != excluded.MANDANT
-            OR PROJECT_DETAILS.INTEGRATION_SERVER != excluded.INTEGRATION_SERVER
-            OR PROJECT_DETAILS.PLATFORM != excluded.PLATFORM;
-        """
-
-        # Batch insert all rows
-        cursor.executemany(insert_query, project_data)
-
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
-
-    print("Data has been successfully inserted or updated in the PROJECT_DETAILS table.")
+            project_data.append((project_name, pap, project_type,​⬤
