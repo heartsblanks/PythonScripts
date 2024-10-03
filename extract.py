@@ -17,7 +17,12 @@ def extract_date_from_production_tag(production_tag):
     match = re.search(r"TEST-(\d{4}-\d{2}-\d{2}-\d{4})", production_tag)
     if match:
         date_str = match.group(1)
-        return datetime.strptime(date_str, "%Y-%m-%d-%H%M")
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d-%H%M")
+        except ValueError as e:
+            print(f"Error parsing date from production tag {production_tag}: {e}")
+    else:
+        print(f"Failed to extract date from production tag: {production_tag}")
     return None
 
 # Function to read the file content from a local directory
@@ -47,10 +52,10 @@ def update_project_details(repo_org, file_folder, branch):
     table_info = cursor.fetchall()
     column_names = [info[1] for info in table_info]  # Extract column names
 
-    # Dictionary to store grouped data for each PAP and PF_NUMBER
-    grouped_data = defaultdict(lambda: {'mandants': set(), 'integration_servers': set(), 'platforms': set(), 'latest_production_tag': None, 'latest_date': None, 'row': None})
+    # Dictionary to store grouped data for each PAP
+    grouped_data = defaultdict(lambda: {'pf_numbers': set(), 'mandants': set(), 'integration_servers': set(), 'platforms': set(), 'latest_production_tag': None, 'latest_date': None, 'row': None})
 
-    # Iterate over each row to group data by PAP and PF_NUMBER
+    # Iterate over each row to group data by PAP
     for row in rows:
         row_dict = dict(zip(column_names, row))  # Map column names to row values
         pap = row_dict['PAP']
@@ -63,35 +68,37 @@ def update_project_details(repo_org, file_folder, branch):
         # Extract the date from the PRODUCTION_TAG
         tag_date = extract_date_from_production_tag(production_tag)
 
-        # Check if the current production tag is the latest one for this PAP and PF_NUMBER
-        if grouped_data[(pap, pf_number)]['latest_date'] is None or (tag_date and tag_date > grouped_data[(pap, pf_number)]['latest_date']):
-            grouped_data[(pap, pf_number)]['latest_production_tag'] = production_tag
-            grouped_data[(pap, pf_number)]['latest_date'] = tag_date
-            grouped_data[(pap, pf_number)]['row'] = row_dict  # Keep the latest row
-
-        # Ignore null values for mandants, integration servers, and platforms
+        # Add PF_NUMBER, MANDANT, INTEGRATION_SERVER, PLATFORM to the sets
+        grouped_data[pap]['pf_numbers'].add(pf_number)
         if mandant:
-            grouped_data[(pap, pf_number)]['mandants'].add(mandant)
+            grouped_data[pap]['mandants'].add(mandant)
         if integration_server:
-            grouped_data[(pap, pf_number)]['integration_servers'].add(integration_server)
+            grouped_data[pap]['integration_servers'].add(integration_server)
         if platform:
-            grouped_data[(pap, pf_number)]['platforms'].add(platform)
+            grouped_data[pap]['platforms'].add(platform)
+
+        # Check if the current production tag is the latest one for this PAP
+        if grouped_data[pap]['latest_date'] is None or (tag_date and tag_date > grouped_data[pap]['latest_date']):
+            grouped_data[pap]['latest_production_tag'] = production_tag
+            grouped_data[pap]['latest_date'] = tag_date
+            grouped_data[pap]['row'] = row_dict  # Keep the latest row
 
     # Prepare data for batch insert/update
     project_data = []
 
     # Iterate over the grouped data
-    for (pap, pf_number), data in grouped_data.items():
+    for pap, data in grouped_data.items():
         row_dict = data['row']
 
-        # Convert mandants, integration servers, and platforms to semicolon-separated strings
+        # Convert PF_NUMBER, MANDANTS, INTEGRATION_SERVERS, and PLATFORMS to semicolon-separated strings
+        pf_numbers = '; '.join(sorted(data['pf_numbers'])) if data['pf_numbers'] else ''
         mandants = '; '.join(sorted(data['mandants'])) if data['mandants'] else ''
         integration_servers = '; '.join(sorted(data['integration_servers'])) if data['integration_servers'] else ''
         platforms = '; '.join(sorted(data['platforms'])) if data['platforms'] else ''
         production_tag = data['latest_production_tag']
 
         # Build the file path and read the content from the local directory
-        encoded_file_name = quote(pf_number)
+        encoded_file_name = quote(pf_numbers.split('; ')[-1])  # Use the last PF_NUMBER for the file path
         file_path = os.path.join(file_folder, encoded_file_name)
         file_content = get_file_content_from_local(file_path)
 
@@ -100,7 +107,7 @@ def update_project_details(repo_org, file_folder, branch):
 
         if project_name:
             # Prepare the data for batch insert/update
-            project_type = pf_number  # Assuming PROJECT_TYPE is derived from PF_NUMBER
+            project_type = pf_numbers  # Use PF_NUMBERs as PROJECT_TYPE (concatenated)
             project_data.append((project_name, pap, project_type, mandants, production_tag, integration_servers, platforms))
 
     # Perform batch insert/update with the WHERE clause to update only if there are changes
