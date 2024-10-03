@@ -48,7 +48,7 @@ def update_project_details(repo_org, file_folder, branch):
     column_names = [info[1] for info in table_info]  # Extract column names
 
     # Dictionary to store grouped data for each PAP and PF_NUMBER
-    grouped_data = defaultdict(lambda: {'mandants': set(), 'integration_servers': set(), 'platforms': set(), 'latest_production_tag': None, 'row': None})
+    grouped_data = defaultdict(lambda: {'mandants': set(), 'integration_servers': set(), 'platforms': set(), 'latest_production_tag': None, 'latest_date': None, 'row': None})
 
     # Iterate over each row to group data by PAP and PF_NUMBER
     for row in rows:
@@ -63,6 +63,12 @@ def update_project_details(repo_org, file_folder, branch):
         # Extract the date from the PRODUCTION_TAG
         tag_date = extract_date_from_production_tag(production_tag)
 
+        # Check if the current production tag is the latest one for this PAP and PF_NUMBER
+        if grouped_data[(pap, pf_number)]['latest_date'] is None or (tag_date and tag_date > grouped_data[(pap, pf_number)]['latest_date']):
+            grouped_data[(pap, pf_number)]['latest_production_tag'] = production_tag
+            grouped_data[(pap, pf_number)]['latest_date'] = tag_date
+            grouped_data[(pap, pf_number)]['row'] = row_dict  # Keep the latest row
+
         # Ignore null values for mandants, integration servers, and platforms
         if mandant:
             grouped_data[(pap, pf_number)]['mandants'].add(mandant)
@@ -70,12 +76,6 @@ def update_project_details(repo_org, file_folder, branch):
             grouped_data[(pap, pf_number)]['integration_servers'].add(integration_server)
         if platform:
             grouped_data[(pap, pf_number)]['platforms'].add(platform)
-
-        # Check if the current production tag is the latest one for this PAP and PF_NUMBER
-        if (grouped_data[(pap, pf_number)]['latest_production_tag'] is None or
-                (tag_date and tag_date > extract_date_from_production_tag(grouped_data[(pap, pf_number)]['latest_production_tag']))):
-            grouped_data[(pap, pf_number)]['latest_production_tag'] = production_tag
-            grouped_data[(pap, pf_number)]['row'] = row_dict  # Keep the latest row
 
     # Prepare data for batch insert/update
     project_data = []
@@ -101,4 +101,29 @@ def update_project_details(repo_org, file_folder, branch):
         if project_name:
             # Prepare the data for batch insert/update
             project_type = pf_number  # Assuming PROJECT_TYPE is derived from PF_NUMBER
-            project_data.append((project_name, pap, project_type,​⬤
+            project_data.append((project_name, pap, project_type, mandants, production_tag, integration_servers, platforms))
+
+    # Perform batch insert/update with the WHERE clause to update only if there are changes
+    if project_data:
+        insert_query = f"""
+        INSERT INTO PROJECT_DETAILS (PROJECT_NAME, PAP, PROJECT_TYPE, MANDANT, PRODUCTION_TAG, INTEGRATION_SERVER, PLATFORM)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(PROJECT_NAME, PAP, PROJECT_TYPE)
+        DO UPDATE SET PRODUCTION_TAG = excluded.PRODUCTION_TAG,
+                      MANDANT = excluded.MANDANT,
+                      INTEGRATION_SERVER = excluded.INTEGRATION_SERVER,
+                      PLATFORM = excluded.PLATFORM
+        WHERE PROJECT_DETAILS.PRODUCTION_TAG != excluded.PRODUCTION_TAG
+            OR PROJECT_DETAILS.MANDANT != excluded.MANDANT
+            OR PROJECT_DETAILS.INTEGRATION_SERVER != excluded.INTEGRATION_SERVER
+            OR PROJECT_DETAILS.PLATFORM != excluded.PLATFORM;
+        """
+
+        # Batch insert all rows
+        cursor.executemany(insert_query, project_data)
+
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
+
+    print("Data has been successfully inserted or updated in the PROJECT_DETAILS table.")
