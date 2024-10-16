@@ -6,7 +6,7 @@ def parse_env_properties(file_path):
     properties = {
         "integration_server": None,
         "queues": set(),  # Store unique queue names ending with _EVT, _ERR, or _CPY
-        "database_names": defaultdict(dict),  # replace.replacement.17 values per environment
+        "database_names": {},  # Only store {environment: database_value} for replace.replacement.17
         "property_values": defaultdict(dict)  # replace.value.XX with env-specific or common values
     }
     
@@ -34,7 +34,7 @@ def parse_env_properties(file_path):
     # 3. Database Names (replace.replacement.17 per environment)
     for match in database_pattern.finditer(content):
         env = match.group("env")
-        properties["database_names"][env]["replace.replacement.17"] = match.group("value").strip()
+        properties["database_names"][env] = match.group("value").strip()
 
     # 4. Property Values (replace.value.XX and replace.replacement.XX per environment)
     for match in prop_value_pattern.finditer(content):
@@ -62,5 +62,5 @@ properties = parse_env_properties('your_properties_file.properties')
 # Access the parsed data
 print("Integration Server:", properties["integration_server"])
 print("Queues:", properties["queues"])
-print("Database Names:", properties["database_names"])
+print("Database Names:", properties["database_names"])  # Now simpler with {environment: database_value}
 print("Property Values:", properties["property_values"])
