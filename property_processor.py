@@ -7,6 +7,7 @@ def parse_env_properties(file_path):
         "integration_server": None,
         "queues": set(),  # Store unique queue names ending with _EVT, _ERR, or _CPY
         "database_names": defaultdict(dict),  # Store {property_name: {environment: value}}
+        "webservices": defaultdict(dict),  # Store web service URLs {property_name: {environment: value}}
         "property_values": defaultdict(dict)  # Store {property_name: {environment: value}}
     }
     
@@ -50,9 +51,11 @@ def parse_env_properties(file_path):
 
             # Only process if it matches the current property number
             if prop_num == num:
-                # Check if the property is a database property (contains "RPL_DB")
+                # Check if the property is a database or web service property
                 if "RPL_DB" in property_name:
                     properties["database_names"][property_name][env] = value
+                elif "RPL_" in property_name and "URL" in property_name:
+                    properties["webservices"][property_name][env] = value
                 else:
                     properties["property_values"][property_name][env] = value
 
@@ -65,4 +68,5 @@ properties = parse_env_properties('your_properties_file.properties')
 print("Integration Server:", properties["integration_server"])
 print("Queues:", properties["queues"])
 print("Database Names:", properties["database_names"])  # Organized by {property_name: {env: value}}
+print("Webservices:", properties["webservices"])  # Stores web services with URLs
 print("Property Values:", properties["property_values"])
