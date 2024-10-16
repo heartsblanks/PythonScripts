@@ -7,7 +7,7 @@ def parse_env_properties(file_path):
         "integration_server": None,
         "queues": set(),  # Store unique queue names ending with _EVT, _ERR, or _CPY
         "database_names": defaultdict(dict),  # Store {property_name: {environment: value}}
-        "property_values": defaultdict(dict)  # replace.value.XX with env-specific or common values
+        "property_values": defaultdict(dict)  # store {property_name: {environment: value}}
     }
     
     # Define regex patterns
@@ -15,7 +15,7 @@ def parse_env_properties(file_path):
     queue_pattern = re.compile(r"=(.+?(_EVT|_ERR|_CPY))$", re.MULTILINE)
     database_pattern = re.compile(r"^(?P<env>\w+)\.replace\.replacement\.17=(?P<value>.+)$", re.MULTILINE)
     property_pattern = re.compile(r"^(?P<env>\w+)?\.?replace\.replacement\.(?P<prop_num>\d+)=(?P<value>.+)$", re.MULTILINE)
-    prop_value_pattern = re.compile(r"^(?P<env>\w+)?\.replace\.value\.(?P<prop_num>\d+)=(?P<value>.+)$", re.MULTILINE)
+    prop_value_pattern = re.compile(r"^replace\.value\.(?P<num>\d+)=(?P<property_name>.+)$", re.MULTILINE)
 
     # Read file content
     with open(file_path, 'r') as f:
@@ -31,30 +31,24 @@ def parse_env_properties(file_path):
         queue_name = match.group(1).strip()
         properties["queues"].add(queue_name)
 
-    # 3. Database Names (replace.replacement.17 per environment)
-    # Store under a specific property name, e.g., {RPL_DB00}
-    db_property_name = "{RPL_DB00}"
-    for match in database_pattern.finditer(content):
-        env = match.group("env")
-        properties["database_names"][db_property_name][env] = match.group("value").strip()
-
-    # 4. Property Values (replace.value.XX and replace.replacement.XX per environment)
+    # 3. Replace.value.<num> properties (Property names with or without RPL_DB)
     for match in prop_value_pattern.finditer(content):
-        env = match.group("env") or "common"  # Use "common" for env-agnostic values
-        prop_num = match.group("prop_num")
-        value = match.group("value").strip()
-        properties["property_values"][env][f"replace.value.{prop_num}"] = value
+        num = match.group("num")  # Number, like "23" in replace.value.23
+        property_name = match.group("property_name").strip()
 
-    # Process other replacements while excluding identified queues
-    processed_queues = {f"replace.replacement.{num}" for num in properties["queues"]}
-    for match in property_pattern.finditer(content):
-        env = match.group("env") or "common"  # Use "common" for env-agnostic values
-        prop_num = match.group("prop_num")
-        key = f"replace.replacement.{prop_num}"
-        
-        # Only add if it's not one of the known queues
-        if key not in processed_queues:
-            properties["property_values"][env][key] = match.group("value").strip()
+        # 4. Find all env-specific or common values for this property
+        for env_match in property_pattern.finditer(content):
+            env = env_match.group("env") or "common"  # Use "common" if no environment prefix
+            prop_num = env_match.group("prop_num")
+            value = env_match.group("value").strip()
+
+            # Only process if it matches the current property number
+            if prop_num == num:
+                # Check if the property is a database property (contains "RPL_DB")
+                if "RPL_DB" in property_name:
+                    properties["database_names"][property_name][env] = value
+                else:
+                    properties["property_values"][property_name][env] = value
 
     return properties
 
