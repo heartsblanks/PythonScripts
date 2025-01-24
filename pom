@@ -31,7 +31,7 @@
 
     <build>
         <plugins>
-            <!-- Plugin to build the main source JAR -->
+            <!-- Plugin to compile and package the main source JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -50,7 +50,7 @@
                 </executions>
             </plugin>
 
-            <!-- Plugin to build the test JAR -->
+            <!-- Plugin to package the test JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -63,7 +63,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <classifier>tests</classifier>
+                            <classifier>tests</classifier> <!-- Attach test JAR with classifier -->
                             <finalName>${project.artifactId}</finalName>
                         </configuration>
                     </execution>
@@ -91,41 +91,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <!-- Default profile: Includes test compilation -->
-        <profile>
-            <id>default</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-
-        <!-- Skip test compilation profile -->
-        <profile>
-            <id>skip-tests</id>
-            <activation>
-                <property>
-                    <name>skipTests</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>3.8.1</version>
-                        <executions>
-                            <!-- Disable test compilation -->
-                            <execution>
-                                <id>default-testCompile</id>
-                                <phase>none</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
