@@ -10,7 +10,6 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <skipTests>false</skipTests> <!-- Default behavior -->
     </properties>
 
     <dependencies>
@@ -32,35 +31,6 @@
 
     <build>
         <plugins>
-            <!-- Plugin to compile source and conditionally exclude test files -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-                <executions>
-                    <!-- Main source compilation -->
-                    <execution>
-                        <id>compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-
-                    <!-- Test compilation, conditionally excluded -->
-                    <execution>
-                        <id>test-compile</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <skipTests>${skipTests}</skipTests>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Plugin to build the main source JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -95,7 +65,6 @@
                         <configuration>
                             <classifier>tests</classifier>
                             <finalName>${project.artifactId}</finalName>
-                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                 </executions>
@@ -122,4 +91,41 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Default profile: Includes test compilation -->
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+
+        <!-- Skip test compilation profile -->
+        <profile>
+            <id>skip-tests</id>
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.8.1</version>
+                        <executions>
+                            <!-- Disable test compilation -->
+                            <execution>
+                                <id>default-testCompile</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
