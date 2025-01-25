@@ -1,160 +1,65 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://www.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>com.example</groupId>
     <artifactId>parent-project</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <modules>
-        <!-- Add child modules here -->
-    </modules>
-
-    <properties>
-        <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
-        <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
-        <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
-        <maven.surefire.plugin.version>3.0.0</maven.surefire.plugin.version>
-        <jacoco.plugin.version>0.8.10</jacoco.plugin.version>
-        <nexus.repo.url>https://your-nexus-repository.com/repository/maven-releases/</nexus.repo.url>
-        <nexus.snapshot.url>https://your-nexus-repository.com/repository/maven-snapshots/</nexus.snapshot.url>
-        <java.version>11</java.version>
-    </properties>
-
-    <build>
-        <plugins>
-            <!-- Plugin to create source JAR -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${maven.source.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-source</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Plugin to create test JAR -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven.jar.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>test-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Plugin to copy dependencies to lib folder -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>${maven.dependency.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Plugin to execute tests and generate reports -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.plugin.version}</version>
-                <configuration>
-                    <includes>
-                        <include>**/*Test.java</include>
-                    </includes>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                </configuration>
-            </plugin>
-
-            <!-- Plugin to generate test coverage reports -->
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>default-prepare-agent</id>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>default-report</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Plugin to deploy to Nexus -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <url>${nexus.repo.url}</url>
-                    <repositoryId>nexus-releases</repositoryId>
-                    <snapshotRepository>
-                        <id>nexus-snapshots</id>
-                        <url>${nexus.snapshot.url}</url>
-                    </snapshotRepository>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
     <profiles>
-        <!-- Profile to create only source JAR -->
         <profile>
-            <id>source-only</id>
+            <id>source-jar</id>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
             <build>
                 <plugins>
-                    <!-- Skip test compilation -->
+                    <!-- Maven Jar Plugin -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${maven.surefire.plugin.version}</version>
+                        <artifactId>maven-jar-plugin</artifactId>
                         <configuration>
-                            <skipTests>true</skipTests>
+                            <finalName>${project.artifactId}-source</finalName>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/test/**</exclude>
+                            </excludes>
                         </configuration>
+                    </plugin>
+
+                    <!-- Maven Antrun Plugin for Cleanup -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>cleanup</id>
+                                <phase>package</phase> <!-- Run during the package phase -->
+                                <configuration>
+                                    <tasks>
+                                        <delete>
+                                            <fileset dir="${project.build.directory}">
+                                                <!-- Exclude lib folder -->
+                                                <exclude name="lib/**" />
+                                                <!-- Exclude source JAR -->
+                                                <exclude name="${project.artifactId}-source.jar" />
+                                            </fileset>
+                                        </delete>
+                                    </tasks>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
-
-    <distributionManagement>
-        <repository>
-            <id>nexus-releases</id>
-            <url>${nexus.repo.url}</url>
-        </repository>
-        <snapshotRepository>
-            <id>nexus-snapshots</id>
-            <url>${nexus.snapshot.url}</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
