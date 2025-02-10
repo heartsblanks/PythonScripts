@@ -1,0 +1,188 @@
+properties([
+  parameters([
+    choice(name: 'DEPLOY_TARGET',
+           choices: ['UAT', 'PRODUCTION'],
+           description: 'Select the target environment for deployment.'),
+    [$class: 'ActiveChoiceParameter',
+      choiceType: 'PT_SINGLE_SELECT',
+      description: 'Select the target version from Git tags (Leave blank to build a new one)',
+      filterLength: 1,
+      name: 'TARGET_VERSION',
+      script: [
+        $class: 'GroovyScript',
+        fallbackScript: 'return ["N/A"]',
+        script: '''
+          def tags = "git ls-remote --tags git@your-repo-url.git | awk -F/ '{print $3}' | sed 's/\\^{}//'".execute().text.readLines()
+          return tags.findAll { it.startsWith("v") }.sort().reverse()
+        '''
+      ]
+    ]
+  ])
+])
+
+pipeline {
+  agent any
+
+  environment {
+    SONAR_PROJECT_KEY   = 'your-project-key'
+    SONAR_HOST_URL      = 'https://your-sonarqube-instance.com'
+    SONAR_TOKEN         = credentials('SONAR_TOKEN')
+
+    NEXUS_URL           = 'https://nexus.example.com/repository/appconnect-releases'
+    NEXUS_CREDENTIALS   = credentials('NEXUS_CREDENTIALS')
+
+    PG_HOST             = credentials('PG_HOST')
+    PG_PORT             = credentials('PG_PORT')
+    PG_DB               = credentials('PG_DB')
+    PG_USER             = credentials('PG_USER')
+    PG_PASSWORD         = credentials('PG_PASSWORD')
+
+    DEPLOY_ENV          = params.DEPLOY_TARGET
+    DEPLOY_URL          = params.DEPLOY_TARGET == "UAT" ? 'https://uat-deploy.example.com' : 'https://prod-deploy.example.com'
+
+    BUILD_VERSION       = params.TARGET_VERSION ? params.TARGET_VERSION.replaceAll('v', '') : ''
+    NEW_VERSION         = ''
+  }
+
+  stages {
+    stage('Checkout') {
+      when { expression { !params.TARGET_VERSION } }
+      steps {
+        git branch: 'main', url: 'git@your-repo-url.git'
+      }
+    }
+
+    stage('Build & Test (Parallel)') {
+      when { expression { !params.TARGET_VERSION } }
+      parallel {
+        stage('Build') {
+          steps { sh 'mvn clean package' }
+        }
+        stage('SonarQube Analysis') {
+          steps {
+            withSonarQubeEnv('SonarQube') {
+              sh 'mvn sonar:sonar -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=${SONAR_TOKEN}'
+            }
+          }
+        }
+      }
+    }
+
+    stage('Determine Version') {
+      when { expression { !params.TARGET_VERSION } }
+      steps {
+        script {
+          def latestTag = sh(script: "git describe --tags --abbrev=0 || echo 'v1.0.0'", returnStdout: true).trim()
+          def version = latestTag.replaceAll('v', '')
+          def parts = version.tokenize('.')
+          def major = parts[0] as int
+          def minor = parts[1] as int
+
+          if (params.DEPLOY_TARGET == "UAT") {
+            minor += 1
+            env.NEW_VERSION = "${major}.${minor}.0-SNAPSHOT"
+          } else if (params.DEPLOY_TARGET == "PRODUCTION") {
+            major += 1
+            env.NEW_VERSION = "${major}.0.0"
+          }
+
+          echo "New Version: ${env.NEW_VERSION}"
+        }
+      }
+    }
+
+    stage('Fetch Selected Version from Nexus') {
+      when { expression { params.TARGET_VERSION } }
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'NEXUS_CREDENTIALS', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+          sh """
+            mvn dependency:get -Dartifact=com.mycompany.appconnect:${env.BUILD_VERSION}:bar \\
+            -DremoteRepositories=${NEXUS_URL} -Ddest=target/app-connect.bar
+          """
+        }
+      }
+    }
+
+    stage('Upload to Nexus') {
+      steps {
+        script {
+          def versionToDeploy = params.TARGET_VERSION ? env.BUILD_VERSION : env.NEW_VERSION
+          echo "Uploading version ${versionToDeploy} to Nexus..."
+          sh """
+            mvn deploy:deploy-file -Durl=${NEXUS_URL} \\
+            -DrepositoryId=nexus -Dfile=target/app-connect.bar \\
+            -DgroupId=com.mycompany.appconnect -DartifactId=app-connect \\
+            -Dversion=${versionToDeploy} -Dpackaging=bar
+          """
+        }
+      }
+    }
+
+    stage('Deploy to Environment') {
+      steps {
+        script {
+          def versionToDeploy = params.TARGET_VERSION ? env.BUILD_VERSION : env.NEW_VERSION
+          echo "Deploying version ${versionToDeploy} to ${params.DEPLOY_TARGET}..."
+          sh "curl -X POST -H 'Content-Type: application/json' --data '@target/app-connect.bar' ${DEPLOY_URL}"
+        }
+      }
+    }
+
+    stage('Record Deployment in PostgreSQL') {
+      steps {
+        script {
+          def versionToDeploy = params.TARGET_VERSION ? env.BUILD_VERSION : env.NEW_VERSION
+          def deployedBy = env.BUILD_USER ?: "Jenkins"
+          def deploymentDate = sh(script: "date +%Y-%m-%dT%H:%M:%S", returnStdout: true).trim()
+
+          echo "Recording deployment in PostgreSQL..."
+          withCredentials([usernamePassword(credentialsId: 'PG_CREDENTIALS', usernameVariable: 'PG_USER', passwordVariable: 'PG_PASS')]) {
+            sh """
+              PGPASSWORD=${PG_PASS} psql -h ${PG_HOST} -p ${PG_PORT} -U ${PG_USER} -d ${PG_DB} -c "
+              INSERT INTO deployments (application_name, user, version, deployment_date, environment_type, environment_name)
+              VALUES ('AppConnect', '${deployedBy}', '${versionToDeploy}', '${deploymentDate}', '${params.DEPLOY_TARGET}', '${DEPLOY_URL}');
+              "
+            """
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Deployment Successful"
+    }
+    failure {
+      script {
+        if (params.DEPLOY_TARGET == "PRODUCTION") {
+          echo "❌ Deployment failed! Rolling back to previous stable version..."
+          def lastStableVersion = sh(script: "curl -s ${NEXUS_URL}/latest-stable-version", returnStdout: true).trim()
+          
+          sh "mvn dependency:get -Dartifact=com.mycompany.appconnect:${lastStableVersion}:bar -DremoteRepositories=${NEXUS_URL} -Ddest=target/app-connect.bar"
+          
+          sh "curl -X POST -H 'Content-Type: application/json' --data '@target/app-connect.bar' ${DEPLOY_URL}"
+          echo "✅ Rollback completed! Reverted to ${lastStableVersion}."
+        }
+      }
+
+      mail to: "devops@example.com",
+           subject: "🚨 Production Deployment Failed",
+           body: "Deployment of ${env.NEW_VERSION} to Production failed! Check Jenkins logs."
+    }
+  }
+}
+stage('Tag Release in Git') {
+  when { expression { params.DEPLOY_TARGET == "PRODUCTION" && !params.TARGET_VERSION } }
+  steps {
+    script {
+      echo "Tagging the repository with v${env.NEW_VERSION}..."
+      sh """
+        git config user.name "Jenkins"
+        git config user.email "jenkins@example.com"
+        git tag -a v${env.NEW_VERSION} -m "Release version ${env.NEW_VERSION}"
+        git push origin v${env.NEW_VERSION}
+      """
+    }
+  }
+}
