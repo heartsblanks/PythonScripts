@@ -4,18 +4,20 @@ import com.cloudbees.hudson.plugins.folder.*
 import org.jenkinsci.plugins.workflow.multibranch.*
 import org.jenkinsci.plugins.workflow.job.*
 
-// Your folder name
+// Define the name of the folder containing multibranch pipeline jobs
 def folderName = "MyProjects"
 
-// Get Jenkins instance and folder
+// Get Jenkins and the folder item
 def jenkins = Jenkins.instance
 def folder = jenkins.getItem(folderName)
 
 def html = new StringBuilder()
+
 html << "<h2>Multibranch Pipeline Dashboard: " + folderName + "</h2>"
 html << "<table border='1' cellpadding='5' cellspacing='0'>"
 html << "<tr><th>Pipeline</th><th>Branch</th><th>Last Build</th><th>Status</th></tr>"
 
+// Iterate through each multibranch pipeline inside the folder
 folder?.getItems().each { item ->
     if (item instanceof WorkflowMultiBranchProject) {
         def pipelineName = item.getName()
