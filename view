@@ -14,7 +14,7 @@ def jenkins = Jenkins.instance
 def folder = jenkins.getItem(folderName)
 
 def html = new StringBuilder()
-html << "<h2>Multibranch Pipeline Dashboard: ${folderName}</h2>"
+html << "<h2>Multibranch Pipeline Dashboard: " + folderName + "</h2>"
 html << "<table border='1' cellpadding='5'><tr><th>Pipeline</th><th>Branch</th><th>Last Build</th><th>Status</th></tr>"
 
 folder?.getItems().each { item ->
@@ -23,11 +23,14 @@ folder?.getItems().each { item ->
         item.getItems().each { branchJob ->  // each branch
             def lastBuild = branchJob.getLastBuild()
             def status = lastBuild?.result?.toString() ?: "N/A"
+            def buildDisplay = lastBuild?.displayName ?: 'No builds'
+            def buildUrl = lastBuild?.absoluteUrl ?: '#'
+
             html << "<tr>"
             html << "<td>${multibranchJobName}</td>"
             html << "<td>${branchJob.name}</td>"
-            html << "<td>${lastBuild?.displayName ?: 'No builds'}</td>"
-            html << "<td>${status}</td>"
+            html << "<td><a href='" + buildUrl + "'>" + buildDisplay + "</a></td>"
+            html << "<td>" + status + "</td>"
             html << "</tr>"
         }
     }
