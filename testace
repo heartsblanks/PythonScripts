@@ -1,0 +1,119 @@
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.ibm.integration.test.v1.TestMessageAssembly;
+import com.ibm.integration.test.v1.TestSetup;
+import com.ibm.integration.test.v1.SpyObjectReference;
+import com.ibm.integration.test.v1.TestInterface;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
+
+public class MyHttpFlowXmlTest {
+
+    private static final String INTEGRATION_SERVER_NAME = "TestServer1";
+    private static final String APPLICATION_NAME = "MyApp";
+    private static final String MESSAGE_FLOW_NAME = "MyHttpFlow.msgflow";
+
+    private static SpyObjectReference httpReplySpy;
+
+    @BeforeAll
+    public static void setup() throws Exception {
+        TestSetup testSetup = TestSetup.getInstance();
+        testSetup.initialise();
+        testSetup.startServer(INTEGRATION_SERVER_NAME);
+
+        // Deploy BAR that contains your msgflow
+        testSetup.deployBarFile(
+            INTEGRATION_SERVER_NAME,
+            "target/MyApp.bar"
+        );
+
+        // Spy on HTTP Reply node
+        httpReplySpy = new SpyObjectReference()
+            .server(INTEGRATION_SERVER_NAME)
+            .application(APPLICATION_NAME)
+            .messageFlow(MESSAGE_FLOW_NAME)
+            .node("HTTP Reply") // <-- must match node label in Toolkit
+            .terminal("out");
+
+        TestInterface.createSpy(httpReplySpy);
+    }
+
+    @Test
+    public void testXmlRequestHappyPath() throws Exception {
+
+        // 1. Load XML request from src/test/resources/request.xml
+        String xmlPayload = readResource("/request.xml");
+
+        // 2. Build TestMessageAssembly with XML body instead of JSON
+        TestMessageAssembly inputAssembly = new TestMessageAssembly();
+
+        // Message tree: this should create an XMLNSC (or XMLNS) body with your XML.
+        // If you already have generated helpers from ACE Toolkit (often called "createMessageAssembly_*"),
+        // use those. Below is a common manual pattern:
+        inputAssembly.setMessageTree(
+            TestMessageFactory.createXmlMessage(xmlPayload, "XMLNSC")
+        );
+
+        // 3. LocalEnvironment to mimic HTTP Input node metadata
+        inputAssembly.setLocalEnvironmentTree(
+            HttpLocalEnvFactory.createHttpLocalEnv(
+                "POST",                    // HTTP method
+                "/myService/getData",     // Request path (whatever your flow is wired to)
+                "",                       // Query string
+                "application/xml"         // Content-Type
+            )
+        );
+
+        // 4. Inject message into HTTP Input node's "in" terminal
+        SpyObjectReference httpInputIn = new SpyObjectReference()
+            .server(INTEGRATION_SERVER_NAME)
+            .application(APPLICATION_NAME)
+            .messageFlow(MESSAGE_FLOW_NAME)
+            .node("HTTP Input") // <-- must match your HTTP Input node label
+            .terminal("in");
+
+        TestInterface.putMessage(httpInputIn, inputAssembly);
+
+        // 5. Capture output from HTTP Reply node
+        TestMessageAssembly[] replies = TestInterface.getMessages(httpReplySpy);
+
+        assertEquals(1, replies.length, "Expected one HTTP reply message");
+
+        TestMessageAssembly reply = replies[0];
+
+        // 6. Assert HTTP status
+        String statusCode =
+            HttpLocalEnvFactory.readStatusCode(reply.getLocalEnvironmentTree());
+        assertEquals("200", statusCode);
+
+        // 7. Assert response body
+        String replyBodyXml =
+            TestMessageFactory.readXmlAsString(reply.getMessageTree());
+
+        // Do whatever makes sense here:
+        assertTrue(
+            replyBodyXml.contains("<CustomerName>"),
+            "Response XML should contain CustomerName element"
+        );
+    }
+
+    /**
+     * Helper to read a classpath resource fully into a String.
+     */
+    private static String readResource(String pathOnClasspath) throws Exception {
+        try (InputStream is = MyHttpFlowXmlTest.class.getResourceAsStream(pathOnClasspath)) {
+            if (is == null) {
+                throw new IllegalStateException("Could not find resource " + pathOnClasspath);
+            }
+            try (Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name())) {
+                scanner.useDelimiter("\\A"); // read all
+                return scanner.hasNext() ? scanner.next() : "";
+            }
+        }
+    }
+}
