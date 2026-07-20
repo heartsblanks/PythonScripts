@@ -1,0 +1,97 @@
+##############################################################################
+# Retargets calls bound to de.it.eai.TubTestCase's inherited assert/fail
+# methods so they call org.junit.jupiter.api.Assertions directly instead.
+# Run this BEFORE deleting the overrides from TubTestCase.java.
+##############################################################################
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.hsbc.htde.eai.TubTestCaseAssertsToJupiter
+displayName: Retarget TubTestCase asserts to JUnit 5 Jupiter Assertions
+description: >-
+  Reorders message-first arguments to message-last where needed, then
+  retargets each TubTestCase assert/fail call to the equivalent static
+  org.junit.jupiter.api.Assertions method.
+recipeList:
+
+  # --- Reorder message-first overloads to message-last (Jupiter convention) ---
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, int, int)
+      argumentOrder: [1, 2, 0]
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, String, String)
+      argumentOrder: [1, 2, 0]
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, Object, Object)
+      argumentOrder: [1, 2, 0]
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, boolean, boolean)
+      argumentOrder: [1, 2, 0]
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertTrue(String, boolean)
+      argumentOrder: [1, 0]
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertFalse(String, boolean)
+      argumentOrder: [1, 0]
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertNotNull(String, Object)
+      argumentOrder: [1, 0]
+  - org.openrewrite.java.ChangeMethodInvocationArgumentOrder:
+      methodPattern: de.it.eai.TubTestCase assertNull(String, Object)
+      argumentOrder: [1, 0]
+
+  # --- Retarget every overload (reordered ones above, plus same-order ones) ---
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertEquals(int, int)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, String)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, int, int)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, String, String)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, Object, Object)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertEquals(boolean, boolean)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertEquals(String, boolean, boolean)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertTrue(boolean)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertTrue(String, boolean)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertFalse(boolean)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertFalse(String, boolean)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertNotNull(Object)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertNotNull(String, Object)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertNull(Object)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase assertNull(String, Object)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase fail()
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: de.it.eai.TubTestCase fail(String)
+      fullyQualifiedTargetTypeName: org.junit.jupiter.api.Assertions
+
+  # --- Tidy up resulting imports ---
+  - org.openrewrite.java.testing.junit5.CleanupJUnitImports
+  - org.openrewrite.java.testing.cleanup.AssertionsArgumentOrder
