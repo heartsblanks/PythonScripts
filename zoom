@@ -3,28 +3,28 @@ You are to WRITE INSTRUCTIONS (a short "how to use Copilot for this task" guide)
 Non-negotiable rules:
 - Output. No commentary.
 - Source of truth: Use ONLY the user-provided inputs in the "Input" section.
-- Missing data: If required details are missing, include clarifying questions at the top (no limit — ask as many as needed to remove ambiguity). If nothing is missing, omit this section and proceed with explicit assumptions instead.
+- GATE — Missing data: If any required Input field is missing or ambiguous, output ONLY the "Clarifying questions" section (no limit on count — ask as many as needed) and STOP. Do not generate any other section in that response. Do not guess or assume.
+- GATE — Fail-fast on invalid input: If Input conflicts with a Critical Constraint below (e.g. requests Declarative pipeline, or lists a Jenkins step/plugin not present in "Allowed Jenkins steps/plugins"), treat this as missing/invalid data — output ONLY clarifying questions flagging the conflict and STOP.
 - No secrets: Never request or include real secrets; use placeholders only.
 - Language: English.
-- Total output ≤ 400 words.
+- Total output ≤ 400 words. This cap applies only to Copilot-generated prose (Guardrails through Output minimisation rules) — it excludes verbatim-quoted Engineering guidelines/DoD text, which is fixed content, not generated.
+- Verbatim length rule: quote Engineering guidelines/DoD inline verbatim only if ≤80 words combined. If longer, do NOT reproduce them — instead instruct Copilot to reference them directly from the source file (e.g. "Done Criteria: see DoD in the referenced file").
 
-Deliverable (strict format):
-1) Clarifying questions — ONLY if required details are missing; otherwise omit.
-2) Assumptions (3 bullets max) — ONLY if no clarifying questions were asked; state what was assumed instead.
-3) Global Guardrails (shared by both modes below, 5-8 bullets max) — must explicitly include: Scripted Pipeline only (node/stage/try-catch-finally), do NOT convert to Declarative; only use Jenkins steps/plugins explicitly listed in Input — if not listed, instruct Copilot to ask a clarifying question (don't assume); validation; timeouts/retries; try/finally cleanup; artefacts+junit reporting; secrets via credential ID placeholders only (e.g. CRED_ID_PLACEHOLDER), never echoed.
-4) Plan Mode Instructions (Copilot)
+Deliverable (strict format) — only produced if the gates above are cleared (i.e. nothing missing, nothing conflicting):
+1) Global Guardrails (shared by both modes below, 5-8 bullets max) — must explicitly include: Scripted Pipeline only (node/stage/try-catch-finally), do NOT convert to Declarative; only use Jenkins steps/plugins explicitly listed in Input — if not listed, instruct Copilot to ask a clarifying question (don't assume); validation; timeouts/retries; try/finally cleanup; artefacts+junit reporting; secrets via credential ID placeholders only (e.g. CRED_ID_PLACEHOLDER), never echoed.
+2) Plan Mode Instructions (Copilot)
    - Goal (1 sentence)
    - What Copilot must produce (3-6 bullets max)
-5) Implementation Mode Instructions (Copilot)
+3) Implementation Mode Instructions (Copilot)
    - Goal (1 sentence)
    - What Copilot must produce (5-10 bullets max)
-6) Done Criteria (copy verbatim from DoD in Input; do not paraphrase)
-7) Output minimisation rules (3 bullets max)
+4) Done Criteria (per Verbatim length rule above: inline if short, reference-only if long; do not paraphrase either way)
+5) Output minimisation rules (3 bullets max)
 
 Critical constraints:
 - Jenkins Groovy MUST be Scripted Pipeline (node/stage/try-catch-finally). Do NOT convert to Declarative.
-- Only use Jenkins steps/plugins explicitly listed in Input; if not listed, instruct Copilot to ask a clarifying question (don't assume).
-- If Input contains "Engineering guidelines" and "DoD", reference them as the authority and include them verbatim only by quoting from Input (do not paraphrase or summarise them).
+- Only use Jenkins steps/plugins explicitly listed in Input; if not listed, this is a gate condition — ask, don't assume.
+- If Input contains "Engineering guidelines" and "DoD", reference them as the authority, per the Verbatim length rule (do not paraphrase or summarise them either way).
 - Never include real secrets; use credential ID placeholders like CRED_ID_PLACEHOLDER; never echo secrets.
 
 Input:
